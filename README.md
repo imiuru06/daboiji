@@ -86,9 +86,25 @@ Register it with any MCP client (e.g. Claude):
 | `add_text` · `add_background` · `add_media` | Ergonomic clip helpers |
 | `add_effect` | Attach an effect to a clip or the master chain |
 | `add_audio` | Add a mixed audio clip (music/VO/SFX) |
-| `get_project` · `update_project` · `estimate` | Inspect / edit / measure |
-| `preview_frame` | Render a single PNG for review |
+| `add_callout` | Add a speech-bubble callout for explainer overlays |
+| `set_camera` | Keyframeable pan/zoom/rotation (+ per-clip `depth` parallax) |
+| `get_project` · `update_project` · `estimate` | Inspect / replace / measure |
+| `list_clips` · `update_clip` · `remove_clip` · `move_clip` | Edit one clip in place |
+| `preview_frame` · `render_range` | Single-frame / time-window preview |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
+
+### Editing only part of a project
+Because the project is a JSON tree, you edit a single clip without touching
+the rest. Find it with `list_clips`, then patch it — only the keys you pass
+change (nested dicts merge, lists replace):
+```python
+update_clip(pid, track="callouts", clip_index=0,
+            patch={"element": {"text": "new copy", "color": "#ff0"},
+                   "start": 4.0})                       # retime + re-word one callout
+render_range(pid, 3.5, 7.0)   # fast preview of just the edited section
+```
+The same applies in Python — a `Project` exposes its spec dict (`p.spec`),
+and `Project.load(path)` / `p.save(path)` round-trip it for external edits.
 
 ## The spec model
 A `Timeline` owns ordered **tracks**; video tracks composite **bottom → top**.

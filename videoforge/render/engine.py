@@ -96,24 +96,38 @@ def render_frame(timeline: Timeline, ctx: RenderContext, t: float) -> np.ndarray
 
 
 def render(timeline: Timeline, out_path: str, *, crf: int = 18,
-           preset: str = "medium", progress: Optional[Callable] = None) -> RenderResult:
+           preset: str = "medium", progress: Optional[Callable] = None,
+           t_start: float = 0.0, t_end: Optional[float] = None) -> RenderResult:
+    """Render the timeline to MP4.
+
+    ``t_start``/``t_end`` restrict output to a time window (seconds) — useful
+    for quickly previewing a section you just edited without re-rendering the
+    whole video. Audio is included only for a full render.
+    """
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-    total = timeline.total_frames
     duration = timeline.computed_duration()
+    fps = timeline.fps
+    is_range = t_start > 0.0 or (t_end is not None and t_end < duration)
+    t_end = duration if t_end is None else min(t_end, duration)
+    f0 = int(round(t_start * fps))
+    f1 = int(round(t_end * fps))
+    total = max(1, f1 - f0)
 
-    audio_clips = [c for tr in timeline.audio_tracks for c in tr.clips]
-    audio_path = mix_audio(audio_clips, duration) if audio_clips else None
+    audio_path = None
+    if not is_range:
+        audio_clips = [c for tr in timeline.audio_tracks for c in tr.clips]
+        audio_path = mix_audio(audio_clips, duration) if audio_clips else None
 
-    enc = FrameEncoder(out_path, timeline.width, timeline.height, timeline.fps,
+    enc = FrameEncoder(out_path, timeline.width, timeline.height, fps,
                        crf=crf, preset=preset, audio_path=audio_path)
     try:
-        for i in range(total):
-            t = i / timeline.fps
-            ctx = RenderContext(timeline.width, timeline.height, timeline.fps,
+        for n, i in enumerate(range(f0, f1)):
+            t = i / fps
+            ctx = RenderContext(timeline.width, timeline.height, fps,
                                 frame_index=i, time=t)
             enc.write(render_frame(timeline, ctx, t))
-            if progress and (i % 10 == 0 or i == total - 1):
-                progress(i + 1, total)
+            if progress and (n % 10 == 0 or n == total - 1):
+                progress(n + 1, total)
     finally:
         enc.close()
         if audio_path and os.path.exists(audio_path):
@@ -123,7 +137,7 @@ def render(timeline: Timeline, out_path: str, *, crf: int = 18,
                 pass
 
     return RenderResult(out_path, timeline.width, timeline.height,
-                        timeline.fps, total, duration)
+                        fps, total, total / fps)
 
 
 def render_thumbnail(timeline: Timeline, out_path: str, t: float = 0.0) -> str:

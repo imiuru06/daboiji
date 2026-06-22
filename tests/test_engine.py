@@ -122,6 +122,36 @@ def test_camera_parallax_shifts_position():
     assert near["position"][0] < far["position"][0]  # foreground moves more
 
 
+def test_update_clip_partial_edit():
+    from videoforge import mcp_server as M
+    pid = "edit_test"
+    M._PROJECTS[pid] = {
+        "width": 160, "height": 90, "fps": 10, "background": "#000",
+        "tracks": [{"kind": "video", "name": "v", "clips": [
+            {"element": {"type": "text", "text": "a", "color": "#fff"},
+             "start": 0, "duration": 1, "transform": {"position": [10, 10]}},
+            {"element": {"type": "text", "text": "b"}, "start": 1, "duration": 1},
+        ]}], "effects": [],
+    }
+    # edit only clip 0's text + retime; position must be preserved
+    M.update_clip(pid, "v", 0, {"element": {"text": "EDITED"}, "start": 2.0})
+    spec = M._PROJECTS[pid]
+    c0 = spec["tracks"][0]["clips"][0]
+    assert c0["element"]["text"] == "EDITED"
+    assert c0["element"]["color"] == "#fff"        # untouched
+    assert c0["transform"]["position"] == [10, 10]  # merged, not lost
+    assert c0["start"] == 2.0
+    assert spec["tracks"][0]["clips"][1]["element"]["text"] == "b"  # sibling intact
+
+
+def test_render_range_frame_count():
+    p = vf.Project(160, 90, fps=10, background="#102030")
+    p.track("video").add(vf.Project.solid("#ffffff"), 0, 4)
+    res = vf.render(p.timeline(), os.path.join(tempfile.mkdtemp(), "r.mp4"),
+                    preset="ultrafast", t_start=1.0, t_end=2.5)
+    assert res.frames == 15  # (2.5-1.0)*10
+
+
 def test_full_render_produces_valid_mp4():
     tmp = tempfile.mkdtemp()
     out = os.path.join(tmp, "t.mp4")
