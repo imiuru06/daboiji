@@ -38,7 +38,7 @@ class FrameEncoder:
             "-pix_fmt", pix_fmt, "-movflags", "+faststart",
         ]
         if audio_path:
-            cmd += ["-c:a", "aac", "-b:a", "192k", "-shortest"]
+            cmd += ["-c:a", "aac", "-b:a", "192k"]
         cmd += [path]
         self.cmd = cmd
         # ffmpeg logs to stderr continuously; draining it via a PIPE we never

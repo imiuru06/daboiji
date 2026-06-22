@@ -57,7 +57,7 @@ def make_texture(path: str, w: int = 1280, h: int = 720):
     Image.fromarray(arr, "RGB").save(path)
 
 
-def make_ambient(path: str, seconds: float = 14.0, sr: int = 44100):
+def make_ambient(path: str, seconds: float = 16.0, sr: int = 44100):
     """A gentle evolving ambient pad (sum of detuned sines + slow swell)."""
     t = np.linspace(0, seconds, int(sr * seconds), endpoint=False)
     base = 110.0  # A2
