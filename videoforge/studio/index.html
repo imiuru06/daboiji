@@ -278,7 +278,8 @@ function chatBubble(role,text){
 }
 async function chatStatus(){
   try{const s=await api('GET','/api/chat/status');
-    $('#chatStatus').textContent=s.available?('● '+s.provider+' · '+(s.model||'')):'○ LLM 프로바이더 미설정';
+    const mcp=s.mcp_connected?('MCP '+s.mcp_tools+'개 도구'):'MCP 미연결';
+    $('#chatStatus').textContent=s.available?('● '+mcp+' · '+s.provider+' '+(s.model||'')):('○ '+mcp+' · LLM 미설정');
     $('#chatStatus').style.color=s.available?'var(--ok)':'var(--mut)';
     $('#chatStatus').title=s.hint||'';}catch(e){}
 }

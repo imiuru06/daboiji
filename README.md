@@ -138,10 +138,13 @@ mode, `.vscode/mcp.json`), opencode (`opencode.json`), Cline/Cursor/Windsurf
 (`mcpServers`). Point every client at the same `VIDEOFORGE_STORE` and they
 collaborate with the Studio UI and Claude Code on one project.
 
-#### In-app AI editing (chat → edit → preview), provider-agnostic
-The Studio also has a chat panel: type an instruction in natural language and
-an LLM drives the editing tools on the shared project — "말로 지시 → 에이전트가
-편집 → 즉시 프리뷰" in one screen. The backend is pluggable:
+#### In-app AI editing (chat → edit → preview) — itself an MCP client
+The Studio's chat panel is **not** a bespoke function-caller: it connects to
+the VideoForge MCP server as a client (exactly like the agents above),
+discovers the tools via `list_tools`, and executes them via `call_tool`. The
+LLM is only the brain that picks tools; the single source of truth is the MCP
+server, so any tool added there appears in the chat automatically and edits go
+through the same shared store. The LLM brain is pluggable:
 ```bash
 # Claude
 pip install '.[ai]'        && export ANTHROPIC_API_KEY=sk-ant-...
