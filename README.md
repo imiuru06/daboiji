@@ -106,6 +106,30 @@ render_range(pid, 3.5, 7.0)   # fast preview of just the edited section
 The same applies in Python — a `Project` exposes its spec dict (`p.spec`),
 and `Project.load(path)` / `p.save(path)` round-trip it for external edits.
 
+## Studio UI + Claude Code (shared backend)
+A human in a browser and an agent (Claude Code over MCP) can drive the **same
+projects at the same time**. Both front-ends call the same operations and
+share one on-disk store (`videoforge.service.STORE`), so each sees the
+other's edits.
+
+```
+  human ─▶ Studio web UI ─▶ HTTP ─┐
+                                  ├─▶ same ops ─▶ shared JSON store (.vf_projects) ─▶ render
+  Claude Code ─▶ MCP (stdio) ─────┘
+```
+
+```bash
+# 1) start the Studio (serves UI + REST on :8080)
+VIDEOFORGE_STORE=.vf_projects python -m videoforge.studio.server
+# open http://localhost:8080
+```
+The repo ships a `.mcp.json` pointing Claude Code's `videoforge` MCP server at
+the **same** `VIDEOFORGE_STORE`, so anything the agent creates/edits over MCP
+shows up live in the UI (it polls every few seconds) and vice-versa. The UI
+lets you create projects, add backgrounds/text/callouts/effects, scrub a
+live preview frame, edit or delete a selected clip, edit the raw JSON spec,
+and render — all backed by the exact MCP tools.
+
 ## The spec model
 A `Timeline` owns ordered **tracks**; video tracks composite **bottom → top**.
 Each **clip** places an **element** at an absolute `start`/`duration` and has:

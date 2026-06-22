@@ -12,6 +12,9 @@ venv/
 # Rendered output (reproducible via examples/)
 output/
 
+# Studio / MCP shared project store (runtime data)
+.vf_projects/
+
 # Generated assets (reproducible via examples/generate_assets.py)
 assets/generated/
 

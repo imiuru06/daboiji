@@ -23,18 +23,20 @@ from . import capabilities as engine_capabilities
 from .builder import Project
 from .render.engine import render, render_thumbnail
 from .core.timeline import Timeline
+from .service import OUTPUT_DIR as _OUTPUT_DIR, STORE as _PROJECTS
 
 mcp = FastMCP("videoforge")
-
-# In-memory project store: project_id -> spec dict
-_PROJECTS: Dict[str, dict] = {}
-_OUTPUT_DIR = os.environ.get("VIDEOFORGE_OUTPUT", os.path.abspath("output"))
 
 
 def _proj(project_id: str) -> dict:
     if project_id not in _PROJECTS:
         raise ValueError(f"Unknown project_id {project_id!r}. Call create_project first.")
     return _PROJECTS[project_id]
+
+
+def _commit(project_id: str, spec: dict) -> None:
+    """Persist a mutated spec back to the shared store."""
+    _PROJECTS[project_id] = spec
 
 
 def _video_track(spec: dict, track_name: Optional[str]) -> dict:
@@ -98,6 +100,7 @@ def add_track(project_id: str, name: str, kind: str = "video") -> dict:
     track ``name`` when adding clips to target a specific layer."""
     spec = _proj(project_id)
     spec["tracks"].append({"kind": kind, "name": name, "clips": []})
+    _commit(project_id, spec)
     return {"ok": True, "tracks": [t.get("name") for t in spec["tracks"]]}
 
 
@@ -134,6 +137,7 @@ def add_clip(project_id: str, element: dict, start: float = 0.0,
     if name:
         clip["name"] = name
     tr["clips"].append(clip)
+    _commit(project_id, spec)
     return {"ok": True, "track": tr.get("name"), "clip_index": len(tr["clips"]) - 1}
 
 
@@ -225,11 +229,13 @@ def add_effect(project_id: str, effect: dict, track: Optional[str] = None,
     spec = _proj(project_id)
     if clip_index is None and track is None:
         spec["effects"].append(effect)
+        _commit(project_id, spec)
         return {"ok": True, "scope": "master", "count": len(spec["effects"])}
     tr = _video_track(spec, track)
     if clip_index is None:
         clip_index = len(tr["clips"]) - 1
     tr["clips"][clip_index].setdefault("effects", []).append(effect)
+    _commit(project_id, spec)
     return {"ok": True, "scope": "clip", "track": tr.get("name"), "clip_index": clip_index}
 
 
@@ -254,6 +260,7 @@ def set_camera(project_id: str, pan: Optional[List] = None,
     if focus is not None:
         cam["focus"] = focus
     spec["camera"] = cam
+    _commit(project_id, spec)
     return {"ok": True, "camera": cam}
 
 
@@ -276,6 +283,7 @@ def add_audio(project_id: str, path: str, start: float = 0.0,
     track["clips"].append({"path": path, "start": start, "duration": duration,
                            "gain_db": gain_db, "fade_in": fade_in,
                            "fade_out": fade_out, "in_point": in_point})
+    _commit(project_id, spec)
     return {"ok": True, "audio_clips": len(track["clips"])}
 
 
@@ -355,6 +363,7 @@ def update_clip(project_id: str, track: str, clip_index: int, patch: dict) -> di
     if not -len(clips) <= clip_index < len(clips):
         raise ValueError(f"clip_index {clip_index} out of range (0..{len(clips)-1})")
     _deep_merge(clips[clip_index], patch)
+    _commit(project_id, spec)
     return {"ok": True, "clip": clips[clip_index]}
 
 
@@ -364,6 +373,7 @@ def remove_clip(project_id: str, track: str, clip_index: int) -> dict:
     spec = _proj(project_id)
     tr = _find_track(spec, track)
     removed = tr["clips"].pop(clip_index)
+    _commit(project_id, spec)
     return {"ok": True, "removed": _clip_summary(removed, clip_index),
             "remaining": len(tr["clips"])}
 
@@ -384,6 +394,7 @@ def move_clip(project_id: str, track: str, clip_index: int,
     if to_track is not None and to_track != track:
         tr["clips"].pop(clip_index)
         _find_track(spec, to_track)["clips"].append(clip)
+    _commit(project_id, spec)
     return {"ok": True, "clip": _clip_summary(clip, clip_index)}
 
 

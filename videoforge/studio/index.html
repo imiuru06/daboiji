@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>VideoForge Studio</title>
+<style>
+  :root{--bg:#0a0d14;--panel:#121726;--panel2:#0e1320;--line:#222a3d;--ink:#e8eefc;
+        --mut:#8aa0c8;--acc:#5cc8ff;--acc2:#ea1834;--ok:#54e0b0;}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.45 -apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;
+       background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);
+         background:linear-gradient(180deg,#121726,#0c1018)}
+  header h1{font-size:16px;margin:0;letter-spacing:.5px}
+  header .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+  .live{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12px}
+  .wrap{display:grid;grid-template-columns:300px 1fr 320px;gap:0;height:calc(100vh - 49px)}
+  .col{padding:14px;overflow:auto}
+  .col.left{border-right:1px solid var(--line)}
+  .col.right{border-left:1px solid var(--line);background:var(--panel2)}
+  h2{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:18px 0 8px}
+  h2:first-child{margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  label{display:block;font-size:11px;color:var(--mut);margin:8px 0 3px}
+  input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+        border-radius:7px;padding:7px 9px;font:inherit}
+  textarea{resize:vertical;min-height:54px;font-family:ui-monospace,monospace;font-size:12px}
+  button{background:var(--acc);color:#04121f;border:0;border-radius:7px;padding:8px 12px;font-weight:600;
+         cursor:pointer}
+  button.sec{background:#1b2438;color:var(--ink)}
+  button.danger{background:#3a1620;color:#ff9aa9}
+  button:hover{filter:brightness(1.08)}
+  .row{display:flex;gap:8px}.row>*{flex:1}
+  .preview{background:#05070c;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+           display:flex;align-items:center;justify-content:center;min-height:300px}
+  .preview img,.preview video{max-width:100%;max-height:62vh;display:block}
+  .scrub{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .scrub input[type=range]{flex:1}
+  .clip{padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;
+        background:var(--panel);font-size:13px}
+  .clip:hover{border-color:var(--acc)}
+  .clip.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+  .clip .meta{color:var(--mut);font-size:11px;margin-top:2px}
+  .tag{display:inline-block;background:#1b2438;color:var(--acc);border-radius:5px;padding:1px 6px;font-size:10px}
+  .muted{color:var(--mut);font-size:12px}
+  .pill{font-size:11px;color:var(--mut)}
+  .grow{flex:2}
+  details summary{cursor:pointer;color:var(--mut);font-size:12px;margin-top:8px}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0e1320;
+         border:1px solid var(--line);padding:9px 14px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .switch{position:relative;width:38px;height:20px}
+  .switch input{display:none}.slider{position:absolute;inset:0;background:#26304a;border-radius:20px;transition:.2s}
+  .slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked+.slider{background:var(--ok)}.switch input:checked+.slider:before{transform:translateX(18px)}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot"></span><h1>VideoForge <b style="color:var(--acc)">Studio</b></h1>
+  <span class="pill" id="store"></span>
+  <span class="live">에이전트와 실시간 동기화
+    <label class="switch"><input type="checkbox" id="live" checked><span class="slider"></span></label>
+  </span>
+</header>
+
+<div class="wrap">
+  <!-- LEFT: project + add -->
+  <div class="col left">
+    <h2>프로젝트</h2>
+    <div class="card">
+      <select id="proj"></select>
+      <div class="row" style="margin-top:8px">
+        <button class="sec" onclick="refreshProjects()">↻</button>
+        <button onclick="createProject()" class="grow">+ 새 프로젝트</button>
+      </div>
+    </div>
+
+    <h2>요소 추가</h2>
+    <div class="card">
+      <label>배경 그라데이션</label>
+      <div class="row"><input id="bg1" value="#1a2c5e"><input id="bg2" value="#0b0e16"></div>
+      <button class="sec" style="margin-top:8px;width:100%" onclick="addBackground()">배경 추가</button>
+    </div>
+    <div class="card">
+      <label>텍스트</label>
+      <input id="txt" value="제품 소개">
+      <div class="row" style="margin-top:6px">
+        <input id="txtSize" type="number" value="90" title="size">
+        <input id="txtColor" value="#ffffff" title="color">
+      </div>
+      <button class="sec" style="margin-top:8px;width:100%" onclick="addText()">텍스트 추가</button>
+    </div>
+    <div class="card">
+      <label>말풍선 콜아웃</label>
+      <input id="coTxt" value="이 부분을 설명">
+      <div class="row" style="margin-top:6px">
+        <input id="coX" type="number" value="640" title="x">
+        <input id="coY" type="number" value="360" title="y">
+        <select id="coSide"><option>bottom</option><option>top</option><option>left</option><option>right</option></select>
+      </div>
+      <button class="sec" style="margin-top:8px;width:100%" onclick="addCallout()">콜아웃 추가</button>
+    </div>
+    <div class="card">
+      <label>마스터 이펙트</label>
+      <select id="fx"></select>
+      <button class="sec" style="margin-top:8px;width:100%" onclick="addEffect()">이펙트 추가</button>
+    </div>
+  </div>
+
+  <!-- CENTER: preview -->
+  <div class="col">
+    <div class="preview" id="stage"><span class="muted">프로젝트를 선택하거나 만들어 주세요</span></div>
+    <div class="scrub">
+      <span class="muted" id="tlabel">0.0s</span>
+      <input id="time" type="range" min="0" max="10" step="0.1" value="0" oninput="onScrub()">
+      <button class="sec" onclick="refreshPreview()">미리보기</button>
+      <button onclick="doRender()" id="renderBtn">렌더 ▶</button>
+    </div>
+    <div id="renderInfo" class="muted" style="margin-top:8px"></div>
+  </div>
+
+  <!-- RIGHT: clips + edit -->
+  <div class="col right">
+    <h2>클립 / 타임라인</h2>
+    <div id="clips"></div>
+
+    <h2>선택한 클립 편집</h2>
+    <div class="card" id="editCard"><span class="muted">클립을 선택하세요</span></div>
+
+    <details>
+      <summary>원본 스펙(JSON) 보기/편집</summary>
+      <textarea id="rawspec" style="min-height:160px;margin-top:8px"></textarea>
+      <button class="sec" style="margin-top:6px;width:100%" onclick="saveSpec()">스펙 저장(PUT)</button>
+    </details>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let PID=null, SPEC=null, SEL=null, CAPS=null;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+async function api(method,path,body){
+  const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined});
+  if(!r.ok){const e=await r.json().catch(()=>({error:r.statusText}));throw new Error(e.error||r.statusText);}
+  const ct=r.headers.get('Content-Type')||'';return ct.includes('json')?r.json():r;
+}
+async function boot(){
+  CAPS=await api('GET','/api/capabilities');
+  $('#fx').innerHTML=CAPS.effects.map(e=>`<option>${e}</option>`).join('');
+  await refreshProjects();
+  setInterval(()=>{if($('#live').checked&&PID)softRefresh();},2500);
+}
+async function refreshProjects(){
+  const {projects}=await api('GET','/api/projects');
+  $('#proj').innerHTML=projects.map(p=>`<option value="${p.id}">${p.name} · ${p.resolution.join('×')}</option>`).join('');
+  if(projects.length){PID=$('#proj').value=projects[projects.length-1].id;await loadProject();}
+}
+$('#proj').onchange=async e=>{PID=e.target.value;await loadProject();};
+async function createProject(){
+  const r=await api('POST','/api/projects',{width:1280,height:720,fps:24,name:'studio-'+Date.now()%10000});
+  await refreshProjects();PID=r.project_id;$('#proj').value=PID;await loadProject();toast('생성됨');
+}
+async function loadProject(){
+  SPEC=await api('GET','/api/projects/'+PID);
+  $('#store').textContent='store: '+(SPEC.name||PID);
+  const dur=SPEC.duration||10;$('#time').max=dur;
+  $('#rawspec').value=JSON.stringify(SPEC,null,2);
+  await loadClips();refreshPreview();
+}
+async function softRefresh(){ // reflect agent edits without disrupting editing
+  try{const s=await api('GET','/api/projects/'+PID);
+    if(JSON.stringify(s)!==JSON.stringify(SPEC)){SPEC=s;$('#rawspec').value=JSON.stringify(s,null,2);
+      await loadClips();refreshPreview();toast('에이전트 변경 반영됨');}}catch(e){}
+}
+async function loadClips(){
+  const {tracks}=await api('GET','/api/projects/'+PID+'/clips');
+  const el=$('#clips');el.innerHTML='';
+  tracks.forEach(tr=>{
+    tr.clips.forEach(c=>{
+      const d=document.createElement('div');d.className='clip'+(SEL&&SEL.track===tr.track&&SEL.index===c.index?' sel':'');
+      d.innerHTML=`<div><span class="tag">${tr.track}</span> ${c.type||''} <b>#${c.index}</b></div>
+        <div class="meta">${(c.preview||'').replace(/</g,'&lt;')} · ${c.start??''}s +${c.duration??''}s</div>`;
+      d.onclick=()=>selectClip(tr.track,c.index);el.appendChild(d);
+    });
+  });
+}
+function selectClip(track,index){
+  SEL={track,index};loadClips();
+  const tr=SPEC.tracks.find(t=>t.name===track);const clip=tr.clips[index];const el=clip.element||{};
+  const pos=(clip.transform&&clip.transform.position)||['',''];
+  $('#editCard').innerHTML=`
+    <div class="pill">${track} #${index} · ${el.type||''}</div>
+    ${el.text!==undefined?`<label>텍스트</label><textarea id="eT">${el.text||''}</textarea>`:''}
+    ${el.color!==undefined?`<label>색</label><input id="eC" value="${el.color||''}">`:''}
+    <div class="row"><div><label>시작(s)</label><input id="eS" type="number" step="0.1" value="${clip.start??0}"></div>
+      <div><label>길이(s)</label><input id="eD" type="number" step="0.1" value="${clip.duration??0}"></div></div>
+    <div class="row"><div><label>X</label><input id="eX" type="number" value="${pos[0]}"></div>
+      <div><label>Y</label><input id="eY" type="number" value="${pos[1]}"></div></div>
+    <div class="row" style="margin-top:10px">
+      <button onclick="applyClip()">적용</button>
+      <button class="danger" onclick="delClip()">삭제</button>
+    </div>`;
+}
+async function applyClip(){
+  const patch={element:{}};
+  const T=$('#eT'),C=$('#eC'),S=$('#eS'),D=$('#eD'),X=$('#eX'),Y=$('#eY');
+  if(T)patch.element.text=T.value;
+  if(C)patch.element.color=C.value;
+  if(!Object.keys(patch.element).length)delete patch.element;
+  if(S)patch.start=parseFloat(S.value);
+  if(D)patch.duration=parseFloat(D.value);
+  if(X&&Y&&X.value!==''&&Y.value!=='')patch.transform={position:[parseFloat(X.value),parseFloat(Y.value)]};
+  await api('PATCH',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`,{patch});
+  await loadProject();toast('클립 수정됨');
+}
+async function delClip(){
+  await api('DELETE',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`);SEL=null;
+  $('#editCard').innerHTML='<span class="muted">클립을 선택하세요</span>';await loadProject();toast('삭제됨');
+}
+async function addBackground(){
+  await api('POST','/api/projects/'+PID+'/background',
+    {gradient:{stops:[[0,$('#bg1').value],[1,$('#bg2').value]],kind:'radial'},duration:SPEC.duration||10});
+  await loadProject();toast('배경 추가');
+}
+async function addText(){
+  await api('POST','/api/projects/'+PID+'/text',
+    {text:$('#txt').value,size:+$('#txtSize').value,color:$('#txtColor').value,font:'kr-bold',duration:4,
+     transition_in:{type:'fade',duration:0.4}});
+  await loadProject();toast('텍스트 추가');
+}
+async function addCallout(){
+  await api('POST','/api/projects/'+PID+'/callout',
+    {text:$('#coTxt').value,position:[+$('#coX').value,+$('#coY').value],tail_side:$('#coSide').value,
+     font:'kr-bold',duration:3,transition_in:{type:'zoom',duration:0.4}});
+  await loadProject();toast('콜아웃 추가');
+}
+async function addEffect(){
+  await api('POST','/api/projects/'+PID+'/effect',{effect:{type:$('#fx').value}});
+  await loadProject();toast('이펙트 추가: '+$('#fx').value);
+}
+async function saveSpec(){
+  try{const spec=JSON.parse($('#rawspec').value);await api('PUT','/api/projects/'+PID,{spec});
+    await loadProject();toast('스펙 저장됨');}catch(e){toast('JSON 오류: '+e.message);}
+}
+function onScrub(){$('#tlabel').textContent=(+$('#time').value).toFixed(1)+'s';clearTimeout(window._sc);
+  window._sc=setTimeout(refreshPreview,180);}
+function refreshPreview(){
+  if(!PID)return;const t=$('#time').value;
+  $('#stage').innerHTML=`<img src="/api/projects/${PID}/preview?t=${t}&_=${Date.now()}"/>`;
+}
+async function doRender(){
+  $('#renderBtn').textContent='렌더 중…';$('#renderInfo').textContent='렌더링 중입니다…';
+  try{const r=await api('POST','/api/projects/'+PID+'/render',{});
+    $('#stage').innerHTML=`<video src="${r.url}?_=${Date.now()}" controls autoplay loop></video>`;
+    $('#renderInfo').textContent=`완료 · ${r.frames}프레임 · ${r.render_seconds}s · ${(r.bytes/1e6).toFixed(1)}MB`;
+  }catch(e){$('#renderInfo').textContent='오류: '+e.message;}
+  $('#renderBtn').textContent='렌더 ▶';
+}
+boot();
+</script>
+</body>
+</html>
