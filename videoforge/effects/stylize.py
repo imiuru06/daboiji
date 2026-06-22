@@ -118,3 +118,28 @@ class Chromatic(Effect):
         out[..., 0] = np.roll(img[..., 0], shift, axis=1)
         out[..., 2] = np.roll(img[..., 2], -shift, axis=1)
         return out
+
+
+@register("spotlight")
+class Spotlight(Effect):
+    """Darken everything except a region, to focus attention on a feature.
+
+    Params: region (region spec — the lit area), darken (0..1 how much the
+    rest is dimmed, default 0.6), feather (px soft edge, default 60)."""
+
+    def apply(self, img, ctx, t):
+        from ._regions import build_mask
+        h, w = img.shape[:2]
+        region = self._params.get("region")
+        darken = float(self.p("darken", t, 0.6))
+        feather = int(self.p("feather", t, 60))
+        if region is None:
+            return img
+        spec = region.at(t) if hasattr(region, "at") else region
+        if isinstance(spec, dict):
+            spec = {**spec, "feather": spec.get("feather", feather)}
+        mask = build_mask(w, h, spec)[..., None]
+        factor = mask + (1.0 - mask) * (1.0 - darken)
+        out = img.copy()
+        out[..., :3] *= factor
+        return out

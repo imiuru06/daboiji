@@ -23,6 +23,13 @@ _FONT_ALIASES = {
     "mono": "GeistMono-Regular",
     "serif": "YoungSerif-Regular",
     "serif-plex": "IBMPlexSerif-Regular",
+    # CJK / Korean
+    "kr": "NanumBarunGothic-Regular",
+    "kr-bold": "NanumBarunGothic-Bold",
+    "cjk": "NanumBarunGothic-Regular",
+    "cjk-bold": "NanumBarunGothic-Bold",
+    "nanum": "NanumBarunGothic-Regular",
+    "nanum-bold": "NanumBarunGothic-Bold",
 }
 
 

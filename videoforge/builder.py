@@ -159,6 +159,11 @@ class Project:
     def shape(shape: str = "rect", **kw) -> dict:
         return {"type": "shape", "shape": shape, **kw}
 
+    @staticmethod
+    def callout(text: str, **kw) -> dict:
+        """A speech-bubble callout with a pointer tail (explainer overlays)."""
+        return {"type": "callout", "text": text, **kw}
+
     # ---- serialization & render --------------------------------------
     def to_dict(self) -> dict:
         return self.spec

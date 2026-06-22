@@ -1,0 +1,626 @@
+{
+  "name": "product_intro",
+  "width": 1280,
+  "height": 720,
+  "fps": 24,
+  "background": "#0a0c12",
+  "tracks": [
+    {
+      "kind": "video",
+      "name": "footage",
+      "clips": [
+        {
+          "element": {
+            "type": "video",
+            "path": "/home/user/daboiji/output/dewatermarked_lama.mp4",
+            "fit": "cover",
+            "size": [
+              1280,
+              720
+            ]
+          },
+          "start": 0,
+          "duration": 10.0
+        }
+      ]
+    },
+    {
+      "kind": "video",
+      "name": "overlay",
+      "clips": [
+        {
+          "element": {
+            "type": "shape",
+            "shape": "rect",
+            "size": [
+              10,
+              96
+            ],
+            "fill": "#ea1834"
+          },
+          "start": 0.3,
+          "duration": 2.9,
+          "transform": {
+            "position": [
+              92,
+              600
+            ],
+            "anchor": "left"
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.5,
+            "direction": "up",
+            "distance": 30
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "AURORA GT",
+            "size": 70,
+            "font": "display",
+            "color": "#ffffff",
+            "align": "left"
+          },
+          "start": 0.4,
+          "duration": 2.8,
+          "transform": {
+            "position": [
+              120,
+              578
+            ],
+            "anchor": "left"
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.5,
+            "direction": "left",
+            "distance": 60
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.25,
+              "radius": 10
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "\uc77c\ub809\ud2b8\ub9ad \ud558\uc774\ud37c\uce74  \u00b7  \uc81c\ud488 \uc18c\uac1c",
+            "size": 26,
+            "font": "kr",
+            "color": "#ea1834",
+            "align": "left"
+          },
+          "start": 0.7,
+          "duration": 2.5,
+          "transform": {
+            "position": [
+              122,
+              636
+            ],
+            "anchor": "left"
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.6
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "shape",
+            "shape": "rounded_rect",
+            "size": [
+              300,
+              96
+            ],
+            "fill": "#0e1320",
+            "stroke": "#ea1834",
+            "stroke_width": 2,
+            "radius": 14
+          },
+          "start": 7.4,
+          "duration": 2.299999999999999,
+          "transform": {
+            "position": [
+              316.0,
+              632
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.5,
+            "direction": "up",
+            "distance": 50
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.15,
+              "radius": 6
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "0 \u2192 100 km/h",
+            "size": 22,
+            "font": "kr",
+            "color": "#9fb0cf"
+          },
+          "start": 7.45,
+          "duration": 2.299999999999999,
+          "transform": {
+            "position": [
+              316.0,
+              612
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "2.9s",
+            "size": 34,
+            "font": "display",
+            "color": "#ffffff"
+          },
+          "start": 7.45,
+          "duration": 2.299999999999999,
+          "transform": {
+            "position": [
+              316.0,
+              648
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "shape",
+            "shape": "rounded_rect",
+            "size": [
+              300,
+              96
+            ],
+            "fill": "#0e1320",
+            "stroke": "#ea1834",
+            "stroke_width": 2,
+            "radius": 14
+          },
+          "start": 7.58,
+          "duration": 2.119999999999999,
+          "transform": {
+            "position": [
+              640.0,
+              632
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.5,
+            "direction": "up",
+            "distance": 50
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.15,
+              "radius": 6
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "\ucd5c\uace0\ucd9c\ub825",
+            "size": 22,
+            "font": "kr",
+            "color": "#9fb0cf"
+          },
+          "start": 7.63,
+          "duration": 2.119999999999999,
+          "transform": {
+            "position": [
+              640.0,
+              612
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "1,020 PS",
+            "size": 34,
+            "font": "display",
+            "color": "#ffffff"
+          },
+          "start": 7.63,
+          "duration": 2.119999999999999,
+          "transform": {
+            "position": [
+              640.0,
+              648
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "shape",
+            "shape": "rounded_rect",
+            "size": [
+              300,
+              96
+            ],
+            "fill": "#0e1320",
+            "stroke": "#ea1834",
+            "stroke_width": 2,
+            "radius": 14
+          },
+          "start": 7.760000000000001,
+          "duration": 1.9399999999999986,
+          "transform": {
+            "position": [
+              964.0,
+              632
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.5,
+            "direction": "up",
+            "distance": 50
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.15,
+              "radius": 6
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "\ucd5c\uace0\uc18d\ub3c4",
+            "size": 22,
+            "font": "kr",
+            "color": "#9fb0cf"
+          },
+          "start": 7.8100000000000005,
+          "duration": 1.9399999999999986,
+          "transform": {
+            "position": [
+              964.0,
+              612
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "350 km/h",
+            "size": 34,
+            "font": "display",
+            "color": "#ffffff"
+          },
+          "start": 7.8100000000000005,
+          "duration": 1.9399999999999986,
+          "transform": {
+            "position": [
+              964.0,
+              648
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "AURORA GT",
+            "size": 120,
+            "font": "display",
+            "color": "#ffffff"
+          },
+          "start": 9.0,
+          "duration": 1.0,
+          "transform": {
+            "position": [
+              640.0,
+              330.0
+            ]
+          },
+          "transition_in": {
+            "type": "zoom",
+            "duration": 0.5,
+            "from": 0.85
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.4,
+              "radius": 16
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "2026 \u00b7 \uc0ac\uc804 \uc608\uc57d \uc2dc\uc791",
+            "size": 34,
+            "font": "kr",
+            "color": "#ea1834"
+          },
+          "start": 9.2,
+          "duration": 0.8,
+          "transform": {
+            "position": [
+              640.0,
+              420.0
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "kind": "video",
+      "name": "callouts",
+      "clips": [
+        {
+          "element": {
+            "type": "callout",
+            "text": "\uc804\ub3d9 \ub9ac\ud2b8\ub799\ud130\ube14 \ub9ac\uc5b4\uc719\n\uace0\uc18d \uc8fc\ud589 \uc2dc \uc790\ub3d9 \uc804\uac1c",
+            "font": "kr-bold",
+            "font_size": 30,
+            "fill": "#ffffff",
+            "color": "#0b0e16",
+            "stroke": "#ea1834",
+            "stroke_width": 3,
+            "tail_side": "top",
+            "max_width": 440,
+            "padding": 20,
+            "radius": 16
+          },
+          "start": 0.8,
+          "duration": 2.6,
+          "transform": {
+            "position": [
+              640,
+              330
+            ]
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.18,
+              "radius": 8
+            }
+          ],
+          "transition_in": {
+            "type": "zoom",
+            "duration": 0.4,
+            "from": 0.7
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "callout",
+            "text": "20\uc778\uce58 \ub2e8\uc870 \uce74\ubcf8 \ud720\n\uc138\ub77c\ubbf9 \ube0c\ub808\uc774\ud06c",
+            "font": "kr-bold",
+            "font_size": 30,
+            "fill": "#ffffff",
+            "color": "#0b0e16",
+            "stroke": "#ea1834",
+            "stroke_width": 3,
+            "tail_side": "left",
+            "max_width": 380,
+            "padding": 20,
+            "radius": 16
+          },
+          "start": 3.2,
+          "duration": 2.6,
+          "transform": {
+            "position": [
+              560,
+              470
+            ]
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.18,
+              "radius": 8
+            }
+          ],
+          "transition_in": {
+            "type": "zoom",
+            "duration": 0.4,
+            "from": 0.7
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        },
+        {
+          "element": {
+            "type": "callout",
+            "text": "LED \ub9e4\ud2b8\ub9ad\uc2a4 \ud5e4\ub4dc\ub7a8\ud504\n\uc801\uc751\ud615 \ud558\uc774\ube54",
+            "font": "kr-bold",
+            "font_size": 30,
+            "fill": "#ffffff",
+            "color": "#0b0e16",
+            "stroke": "#ea1834",
+            "stroke_width": 3,
+            "tail_side": "top",
+            "max_width": 400,
+            "padding": 20,
+            "radius": 16
+          },
+          "start": 5.9,
+          "duration": 2.4,
+          "transform": {
+            "position": [
+              900,
+              470
+            ]
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.18,
+              "radius": 8
+            }
+          ],
+          "transition_in": {
+            "type": "zoom",
+            "duration": 0.4,
+            "from": 0.7
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "kind": "audio",
+      "name": "audio",
+      "clips": [
+        {
+          "path": "/home/user/daboiji/output/dewatermarked_lama.mp4",
+          "start": 0.0
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "type": "spotlight",
+      "region": {
+        "shape": "ellipse",
+        "rect": [
+          240,
+          90,
+          800,
+          560
+        ],
+        "feather": 120
+      },
+      "darken": {
+        "default": 0.0,
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.0
+          },
+          {
+            "time": 1.0,
+            "value": 0.42
+          },
+          {
+            "time": 8.5,
+            "value": 0.42
+          },
+          {
+            "time": 9.6,
+            "value": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "type": "vignette",
+      "amount": 0.3,
+      "softness": 0.7
+    },
+    {
+      "type": "grain",
+      "amount": 0.02
+    }
+  ],
+  "duration": 10.0
+}

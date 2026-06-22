@@ -74,9 +74,20 @@ def test_spec_roundtrip(tmp_path=None):
 
 
 def test_new_effects_registered():
-    fx = vf.capabilities()["effects"]
-    for name in ("fog", "mosaic", "inpaint", "lama_inpaint", "chroma_key", "mask"):
-        assert name in fx, name
+    caps = vf.capabilities()
+    for name in ("fog", "mosaic", "inpaint", "lama_inpaint", "chroma_key", "mask", "spotlight"):
+        assert name in caps["effects"], name
+    assert "callout" in caps["elements"]
+
+
+def test_callout_renders_with_tail():
+    from videoforge.elements.annotations import Callout
+    ctx = vf.RenderContext(640, 360, 24)
+    el = Callout(text="안녕 hello", font="kr", tail_side="bottom")
+    w, h = el.natural_size(ctx)
+    arr = el.render(ctx, 0.0)
+    assert arr.shape == (h, w, 4)
+    assert arr[..., 3].max() > 0.5  # bubble is opaque somewhere
 
 
 def test_chroma_key_makes_transparent():

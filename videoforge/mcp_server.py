@@ -165,6 +165,28 @@ def add_text(project_id: str, text: str, start: float = 0.0, duration: float = 5
 
 
 @mcp.tool()
+def add_callout(project_id: str, text: str, position: List[float], start: float = 0.0,
+                duration: float = 4.0, tail_side: str = "bottom", fill: str = "#ffffff",
+                color: str = "#0b0e16", font: str = "sans", font_size: int = 34,
+                max_width: int = 520, stroke: Optional[str] = None,
+                track: Optional[str] = None, transition_in: Optional[dict] = None,
+                transition_out: Optional[dict] = None) -> dict:
+    """Add a speech-bubble callout for explainer/product overlays. ``position``
+    [x,y] places the bubble; ``tail_side`` (bottom/top/left/right) points the
+    pointer toward the feature you are annotating. Pair with a `pop`/`slide`
+    transition_in for a lively reveal."""
+    element = {"type": "callout", "text": text, "tail_side": tail_side,
+               "fill": fill, "color": color, "font": font, "font_size": font_size,
+               "max_width": max_width}
+    if stroke:
+        element["stroke"] = stroke
+        element["stroke_width"] = 2
+    transform = {"position": position, "anchor": "center"}
+    return add_clip(project_id, element, start, duration, track, transform,
+                    None, "normal", transition_in, transition_out)
+
+
+@mcp.tool()
 def add_background(project_id: str, color: str = "#0b0e16", start: float = 0.0,
                    duration: float = 5.0, gradient: Optional[dict] = None,
                    track: Optional[str] = None) -> dict:
