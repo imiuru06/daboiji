@@ -13,6 +13,7 @@ from typing import List, Optional
 from ..elements.base import Element, from_spec as element_from_spec
 from ..effects.base import Effect, from_spec as effect_from_spec
 from ..transitions.base import Transition, from_spec as transition_from_spec
+from .camera import Camera
 from .transform import Transform
 from .types import BlendMode
 
@@ -32,6 +33,7 @@ class Clip:
     blend_mode: BlendMode = BlendMode.NORMAL
     transition_in: Optional[Transition] = None
     transition_out: Optional[Transition] = None
+    depth: float = 1.0                 # camera reaction: 1=foreground, 0=locked
     name: str = ""
 
     @property
@@ -64,6 +66,7 @@ class Clip:
             transform=Transform.from_spec(spec.get("transform")),
             effects=[effect_from_spec(e) for e in spec.get("effects", [])],
             blend_mode=BlendMode(spec.get("blend_mode", "normal")),
+            depth=float(spec.get("depth", 1.0)),
             name=spec.get("name", ""),
         )
         if spec.get("transition_in"):
@@ -127,6 +130,7 @@ class Timeline:
     background: str = "#000000"
     tracks: List[Track] = field(default_factory=list)
     effects: List[Effect] = field(default_factory=list)   # master/timeline effects
+    camera: "Camera | None" = None
     name: str = "untitled"
 
     @property
@@ -160,5 +164,6 @@ class Timeline:
             background=spec.get("background", "#000000"),
             tracks=[Track.from_spec(t) for t in spec.get("tracks", [])],
             effects=[effect_from_spec(e) for e in spec.get("effects", [])],
+            camera=Camera.from_spec(spec.get("camera")),
             name=spec.get("name", "untitled"),
         )

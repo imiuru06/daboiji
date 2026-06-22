@@ -19,6 +19,7 @@ from typing import Callable, Optional
 import numpy as np
 
 from ..audio.mixer import mix_audio
+from ..core.camera import apply_camera
 from ..core.timeline import Timeline, TrackKind
 from ..core.types import Color
 from . import compositor
@@ -37,7 +38,7 @@ class RenderResult:
     duration: float
 
 
-def render_clip_layer(clip, ctx: RenderContext, t: float):
+def render_clip_layer(clip, ctx: RenderContext, t: float, cam_sample=None):
     """Render one clip; return ``(arr, x, y, opacity)`` for compositing."""
     lt = clip.local_time(t)
     layer = clip.element.render(ctx, lt)
@@ -47,6 +48,8 @@ def render_clip_layer(clip, ctx: RenderContext, t: float):
     samp = clip.transform.sample(lt)
     if not samp["explicit_position"]:
         samp["position"] = (ctx.width / 2.0, ctx.height / 2.0)
+    if cam_sample is not None:
+        samp = apply_camera(samp, cam_sample, clip.depth)
     opacity = samp["opacity"]
     offset = (0.0, 0.0)
     extra_scale = 1.0
@@ -77,9 +80,11 @@ def render_clip_layer(clip, ctx: RenderContext, t: float):
 def render_frame(timeline: Timeline, ctx: RenderContext, t: float) -> np.ndarray:
     bg = Color.parse(timeline.background)
     canvas = compositor.new_canvas(ctx.width, ctx.height, bg.with_alpha(1.0).rgba)
+    cam_sample = (timeline.camera.sample(t, ctx.width, ctx.height)
+                  if timeline.camera else None)
     for track in timeline.video_tracks:
         for clip in track.active_clips(t):
-            arr, x, y, opacity = render_clip_layer(clip, ctx, t)
+            arr, x, y, opacity = render_clip_layer(clip, ctx, t, cam_sample)
             canvas = compositor.composite(
                 canvas, arr, x, y, opacity * track.opacity, clip.blend_mode
             )

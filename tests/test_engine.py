@@ -73,6 +73,44 @@ def test_spec_roundtrip(tmp_path=None):
     assert json.loads(p.to_json())["tracks"][0]["clips"][0]["element"]["type"] == "solid"
 
 
+def test_new_effects_registered():
+    fx = vf.capabilities()["effects"]
+    for name in ("fog", "mosaic", "inpaint", "chroma_key", "mask"):
+        assert name in fx, name
+
+
+def test_chroma_key_makes_transparent():
+    from videoforge.effects.keying import ChromaKey
+    img = np.zeros((4, 4, 4), np.float32)
+    img[..., 1] = 1.0  # pure green
+    img[..., 3] = 1.0
+    out = ChromaKey(key="#00ff00", tolerance=0.1, softness=0.05).apply(
+        img, vf.RenderContext(4, 4, 1), 0.0)
+    assert out[..., 3].max() < 0.01  # green keyed out
+
+
+def test_mosaic_region_and_inpaint_run():
+    from videoforge.effects.censor import Inpaint, Mosaic
+    ctx = vf.RenderContext(64, 64, 1)
+    img = np.random.default_rng(0).random((64, 64, 4)).astype(np.float32)
+    img[..., 3] = 1.0
+    m = Mosaic(block=8, region={"shape": "rect", "rect": [10, 10, 20, 20]}).apply(img, ctx, 0)
+    assert m.shape == img.shape
+    ip = Inpaint(region={"shape": "rect", "rect": [10, 10, 20, 20]}, radius=3).apply(img, ctx, 0)
+    assert ip.shape == img.shape
+
+
+def test_camera_parallax_shifts_position():
+    from videoforge.core.camera import Camera, apply_camera
+    cam = Camera.from_spec({"pan": [100, 0], "zoom": 1.0})
+    s = cam.sample(0.0, 1000, 1000)
+    base = {"position": (500, 500), "scale": (1, 1), "rotation": 0, "opacity": 1,
+            "anchor": vf.Anchor.CENTER, "explicit_position": True}
+    near = apply_camera(base, s, depth=1.0)
+    far = apply_camera(base, s, depth=0.0)
+    assert near["position"][0] < far["position"][0]  # foreground moves more
+
+
 def test_full_render_produces_valid_mp4():
     tmp = tempfile.mkdtemp()
     out = os.path.join(tmp, "t.mp4")

@@ -58,6 +58,11 @@ class Clip:
         self.spec["blend_mode"] = mode
         return self
 
+    def depth(self, value: float) -> "Clip":
+        """Camera reaction: 1=foreground (full parallax), 0=locked backdrop."""
+        self.spec["depth"] = value
+        return self
+
     def effect(self, type: str, **params) -> "Clip":
         self.spec.setdefault("effects", []).append({"type": type, **params})
         return self
@@ -109,6 +114,21 @@ class Project:
 
     def master_effect(self, type: str, **params) -> "Project":
         self.spec["effects"].append({"type": type, **params})
+        return self
+
+    def camera(self, pan=None, zoom=None, rotation=None, focus=None) -> "Project":
+        """Set a keyframeable virtual camera (pan px, zoom, rotation deg).
+        Combine with per-clip ``depth`` for parallax."""
+        cam = {}
+        if pan is not None:
+            cam["pan"] = pan
+        if zoom is not None:
+            cam["zoom"] = zoom
+        if rotation is not None:
+            cam["rotation"] = rotation
+        if focus is not None:
+            cam["focus"] = focus
+        self.spec["camera"] = cam
         return self
 
     # ---- element factories (static dicts) ----------------------------

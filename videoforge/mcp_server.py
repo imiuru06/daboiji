@@ -109,7 +109,8 @@ def add_clip(project_id: str, element: dict, start: float = 0.0,
              duration: float = 5.0, track: Optional[str] = None,
              transform: Optional[dict] = None, effects: Optional[List[dict]] = None,
              blend_mode: str = "normal", transition_in: Optional[dict] = None,
-             transition_out: Optional[dict] = None, name: str = "") -> dict:
+             transition_out: Optional[dict] = None, depth: float = 1.0,
+             name: str = "") -> dict:
     """Add a clip to a video track. ``element`` is an element spec dict (see
     get_capabilities / add_text/add_background helpers). ``transform`` may set
     position [x,y], scale (number or [sx,sy]), rotation (deg), opacity (0..1),
@@ -128,6 +129,8 @@ def add_clip(project_id: str, element: dict, start: float = 0.0,
         clip["transition_in"] = transition_in
     if transition_out:
         clip["transition_out"] = transition_out
+    if depth != 1.0:
+        clip["depth"] = depth
     if name:
         clip["name"] = name
     tr["clips"].append(clip)
@@ -206,6 +209,30 @@ def add_effect(project_id: str, effect: dict, track: Optional[str] = None,
         clip_index = len(tr["clips"]) - 1
     tr["clips"][clip_index].setdefault("effects", []).append(effect)
     return {"ok": True, "scope": "clip", "track": tr.get("name"), "clip_index": clip_index}
+
+
+@mcp.tool()
+def set_camera(project_id: str, pan: Optional[List] = None,
+               zoom: Optional[object] = None, rotation: Optional[object] = None,
+               focus: Optional[List[float]] = None) -> dict:
+    """Set a keyframeable virtual camera over the whole composition.
+
+    pan: [x,y] px offset (or a keyframed property). zoom: scale (1=neutral).
+    rotation: degrees. focus: [x,y] focal point (default canvas center).
+    Give clips a ``depth`` (1=foreground, 0=locked backdrop) for parallax.
+    Enables push-ins, pans, dolly, whip-pans and dutch tilts."""
+    spec = _proj(project_id)
+    cam: Dict[str, Any] = {}
+    if pan is not None:
+        cam["pan"] = pan
+    if zoom is not None:
+        cam["zoom"] = zoom
+    if rotation is not None:
+        cam["rotation"] = rotation
+    if focus is not None:
+        cam["focus"] = focus
+    spec["camera"] = cam
+    return {"ok": True, "camera": cam}
 
 
 @mcp.tool()
