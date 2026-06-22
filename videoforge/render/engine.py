@@ -37,8 +37,8 @@ class RenderResult:
     duration: float
 
 
-def render_clip_layer(clip, ctx: RenderContext, t: float) -> tuple[np.ndarray, float]:
-    """Render one clip to a canvas-sized RGBA layer + opacity. None if hidden."""
+def render_clip_layer(clip, ctx: RenderContext, t: float):
+    """Render one clip; return ``(arr, x, y, opacity)`` for compositing."""
     lt = clip.local_time(t)
     layer = clip.element.render(ctx, lt)
     for fx in clip.effects:
@@ -66,12 +66,12 @@ def render_clip_layer(clip, ctx: RenderContext, t: float) -> tuple[np.ndarray, f
         offset = res.offset
         extra_scale = res.scale
 
-    placed = place_layer(
+    arr, x, y = place_layer(
         layer, ctx.width, ctx.height,
         samp["position"], samp["scale"], samp["rotation"], samp["anchor"],
         extra_offset=offset, extra_scale=extra_scale,
     )
-    return placed, opacity
+    return arr, x, y, opacity
 
 
 def render_frame(timeline: Timeline, ctx: RenderContext, t: float) -> np.ndarray:
@@ -79,9 +79,9 @@ def render_frame(timeline: Timeline, ctx: RenderContext, t: float) -> np.ndarray
     canvas = compositor.new_canvas(ctx.width, ctx.height, bg.with_alpha(1.0).rgba)
     for track in timeline.video_tracks:
         for clip in track.active_clips(t):
-            placed, opacity = render_clip_layer(clip, ctx, t)
+            arr, x, y, opacity = render_clip_layer(clip, ctx, t)
             canvas = compositor.composite(
-                canvas, placed, opacity * track.opacity, clip.blend_mode
+                canvas, arr, x, y, opacity * track.opacity, clip.blend_mode
             )
     # master effects operate on the flattened (opaque) frame
     for fx in timeline.effects:

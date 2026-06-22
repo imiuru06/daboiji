@@ -775,15 +775,24 @@
             {
               "type": "light",
               "position": {
-                "default": 0.15,
+                "default": [
+                  0.15,
+                  0.3
+                ],
                 "keyframes": [
                   {
                     "time": 5.2,
-                    "value": 0.15
+                    "value": [
+                      0.15,
+                      0.3
+                    ]
                   },
                   {
                     "time": 10.2,
-                    "value": 0.85
+                    "value": [
+                      0.85,
+                      0.3
+                    ]
                   }
                 ]
               },

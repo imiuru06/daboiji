@@ -123,7 +123,7 @@ def build() -> vf.Project:
     (light.add(vf.Project.solid("#000000", size=[W, H]), 5.2, 5.0)
         .blend("screen")
         .effect("light",
-                position=K((5.2, 0.15), (10.2, 0.85), default=0.15),
+                position=K((5.2, [0.15, 0.3]), (10.2, [0.85, 0.3]), default=[0.15, 0.3]),
                 color="#6fa8ff", intensity=0.5, radius=0.9, falloff=1.8))
 
     # =================== SCENE C — outro (10.2–15.2) ====================

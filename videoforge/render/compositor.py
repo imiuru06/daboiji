@@ -47,34 +47,44 @@ def _blend_rgb(dst: np.ndarray, src: np.ndarray, mode: BlendMode) -> np.ndarray:
 def composite(
     dst: np.ndarray,
     src: np.ndarray,
+    x: int = 0,
+    y: int = 0,
     opacity: float = 1.0,
     mode: BlendMode = BlendMode.NORMAL,
 ) -> np.ndarray:
-    """Composite ``src`` over ``dst`` in place-safe fashion, returning result.
+    """Composite ``src`` over ``dst`` at top-left ``(x, y)``, in place.
 
-    Uses the standard source-over alpha equation, optionally first passing
-    the colors through a blend function for non-normal modes.
+    Only the overlapping region is touched, so cost scales with the source
+    layer, not the canvas. Uses standard source-over alpha compositing,
+    optionally routing colors through a blend function for non-normal modes.
     """
     if opacity <= 0.0:
         return dst
-    src_rgb = src[..., :3]
-    src_a = src[..., 3:4] * float(opacity)
-    dst_rgb = dst[..., :3]
-    dst_a = dst[..., 3:4]
+    ch, cw = dst.shape[:2]
+    sh, sw = src.shape[:2]
+    x0, y0 = max(0, x), max(0, y)
+    x1, y1 = min(cw, x + sw), min(ch, y + sh)
+    if x1 <= x0 or y1 <= y0:
+        return dst
+    sub_src = src[y0 - y:y1 - y, x0 - x:x1 - x]
+    sub_dst = dst[y0:y1, x0:x1]
+
+    src_rgb = sub_src[..., :3]
+    src_a = sub_src[..., 3:4] * float(opacity)
+    dst_rgb = sub_dst[..., :3]
+    dst_a = sub_dst[..., 3:4]
 
     if mode != BlendMode.NORMAL:
         blended = _blend_rgb(dst_rgb, src_rgb, mode)
-        # where dst is transparent, fall back to raw src color
         src_rgb = dst_a * blended + (1.0 - dst_a) * src_rgb
 
     out_a = src_a + dst_a * (1.0 - src_a)
     safe_a = np.where(out_a > 1e-6, out_a, 1.0)
     out_rgb = (src_rgb * src_a + dst_rgb * dst_a * (1.0 - src_a)) / safe_a
 
-    out = np.empty_like(dst)
-    out[..., :3] = out_rgb
-    out[..., 3:4] = out_a
-    return out
+    sub_dst[..., :3] = out_rgb
+    sub_dst[..., 3:4] = out_a
+    return dst
 
 
 def flatten(img: np.ndarray, background=(0.0, 0.0, 0.0)) -> np.ndarray:

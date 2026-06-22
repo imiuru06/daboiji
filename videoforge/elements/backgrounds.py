@@ -42,6 +42,7 @@ class Gradient(Element):
         self.size = size
         self.center = center
         self.radius = radius
+        self._cache = None  # (w, h) -> array, valid when angle is static
 
     def natural_size(self, ctx):
         return tuple(self.size) if self.size else ctx.size
@@ -55,9 +56,12 @@ class Gradient(Element):
         return out
 
     def render(self, ctx: RenderContext, t: float) -> np.ndarray:
+        from ..render.grids import norm_mesh
         w, h = self.natural_size(ctx)
-        yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-        nx, ny = xx / max(w - 1, 1), yy / max(h - 1, 1)
+        static = not self.angle.is_animated or self.kind == "radial"
+        if static and self._cache is not None and self._cache[0] == (w, h):
+            return self._cache[1]
+        ny, nx = norm_mesh(w, h)
         if self.kind == "radial":
             cx, cy = self.center
             d = np.sqrt(((nx - cx) * (w / max(h, 1))) ** 2 + (ny - cy) ** 2)
@@ -67,7 +71,10 @@ class Gradient(Element):
             proj = np.cos(ang) * nx + np.sin(ang) * ny
             lo, hi = proj.min(), proj.max()
             tcoord = (proj - lo) / max(hi - lo, 1e-6)
-        return self._ramp(tcoord)
+        out = self._ramp(tcoord)
+        if static:
+            self._cache = ((w, h), out)
+        return out
 
     @classmethod
     def from_spec(cls, spec):

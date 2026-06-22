@@ -10,11 +10,12 @@ import numpy as np
 
 from ..core.keyframe import AnimatedProperty
 from ..core.types import Color
+from ..render.grids import mesh
 from .base import Effect, register
 
 
 def _radial_mask(w, h, cx, cy, radius, falloff):
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    yy, xx = mesh(w, h)
     aspect = w / max(h, 1)
     d = np.sqrt(((xx / w - cx) * aspect) ** 2 + (yy / h - cy) ** 2)
     r = max(radius, 1e-4)
@@ -74,7 +75,7 @@ class LightLeak(Effect):
         intensity = float(self.p("intensity", t, 0.4))
         pos = float(self.p("position", t, 0.5))   # 0..1 sweep position
         width = float(self.p("width", t, 0.3))
-        yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+        yy, xx = mesh(w, h)
         diag = (xx / w + yy / h) / 2.0
         m = np.exp(-((diag - pos) ** 2) / (2 * max(width, 1e-3) ** 2))[..., None]
         light = m * col[None, None, :] * intensity
