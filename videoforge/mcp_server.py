@@ -171,7 +171,7 @@ def add_text(project_id: str, text: str, start: float = 0.0, duration: float = 5
 @mcp.tool()
 def add_callout(project_id: str, text: str, position: List[float], start: float = 0.0,
                 duration: float = 4.0, tail_side: str = "bottom", fill: str = "#ffffff",
-                color: str = "#0b0e16", font: str = "sans", font_size: int = 34,
+                color: str = "#0b0e16", font: str = "kr-bold", font_size: int = 34,
                 max_width: int = 520, stroke: Optional[str] = None,
                 track: Optional[str] = None, transition_in: Optional[dict] = None,
                 transition_out: Optional[dict] = None) -> dict:

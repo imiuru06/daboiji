@@ -130,6 +130,20 @@ lets you create projects, add backgrounds/text/callouts/effects, scrub a
 live preview frame, edit or delete a selected clip, edit the raw JSON spec,
 and render — all backed by the exact MCP tools.
 
+#### In-app AI editing (chat → edit → preview)
+The Studio also has a chat panel: type an instruction in natural language and
+Claude (`claude-opus-4-8`) drives the editing operations via tool use, on the
+same shared project — so "말로 지시 → 에이전트가 편집 → 즉시 프리뷰" happens in one
+screen. Enable it by installing the optional SDK and setting a key, then
+(re)starting the Studio:
+```bash
+pip install '.[ai]'            # anthropic SDK
+export ANTHROPIC_API_KEY=sk-ant-...
+python -m videoforge.studio.server
+```
+The chat tools are thin wrappers over the same MCP functions, so the agent's
+edits are identical to (and interoperate with) Claude Code's over MCP.
+
 ## The spec model
 A `Timeline` owns ordered **tracks**; video tracks composite **bottom → top**.
 Each **clip** places an **element** at an absolute `start`/`duration` and has:

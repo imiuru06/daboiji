@@ -25,6 +25,10 @@ ml = [
     "torch>=2.0",
     "simple-lama-inpainting>=0.1.2",
 ]
+# Natural-language editing in the Studio chat panel (Claude tool use).
+ai = [
+    "anthropic>=0.40",
+]
 
 [project.scripts]
 videoforge-mcp = "videoforge.mcp_server:main"

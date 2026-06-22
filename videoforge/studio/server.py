@@ -132,6 +132,24 @@ def _preview(h, m, body):
         return 200, f.read(), "image/png"
 
 
+@route("GET", r"/api/chat/status")
+def _chat_status(h, m, body):
+    from . import chat
+    return 200, {"available": chat.available()}, None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/chat")
+def _chat(h, m, body):
+    from . import chat
+    if not chat.available():
+        return 200, {"available": False, "reply":
+                     "AI 채팅은 ANTHROPIC_API_KEY 가 설정되어야 동작합니다 (anthropic SDK 포함). "
+                     "키를 설정하고 스튜디오를 재시작하세요."}, None
+    result = chat.run_chat(m.group(1), body["message"])
+    result["available"] = True
+    return 200, result, None
+
+
 @route("POST", r"/api/projects/([0-9a-f]+)/render")
 def _render(h, m, body):
     r = M.render_project(m.group(1), crf=body.get("crf", 20), preset=body.get("preset", "veryfast"))

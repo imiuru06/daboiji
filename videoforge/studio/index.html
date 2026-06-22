@@ -119,6 +119,15 @@
       <button onclick="doRender()" id="renderBtn">렌더 ▶</button>
     </div>
     <div id="renderInfo" class="muted" style="margin-top:8px"></div>
+
+    <h2 style="margin-top:18px">AI 편집 채팅 <span id="chatStatus" class="pill"></span></h2>
+    <div class="card" style="display:flex;flex-direction:column;height:220px;padding:0">
+      <div id="chatLog" style="flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px"></div>
+      <div class="row" style="padding:8px;border-top:1px solid var(--line)">
+        <input id="chatIn" placeholder="예: 빨간 제목 '신제품'을 가운데에 추가해줘" onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()" id="chatBtn" style="flex:0 0 auto">전송</button>
+      </div>
+    </div>
   </div>
 
   <!-- RIGHT: clips + edit -->
@@ -260,6 +269,28 @@ async function doRender(){
   }catch(e){$('#renderInfo').textContent='오류: '+e.message;}
   $('#renderBtn').textContent='렌더 ▶';
 }
+function chatBubble(role,text){
+  const d=document.createElement('div');
+  d.style.cssText='max-width:85%;padding:7px 11px;border-radius:10px;font-size:13px;white-space:pre-wrap;'+
+    (role==='user'?'align-self:flex-end;background:#1d2b4a;color:#dfe8fb':'align-self:flex-start;background:#0e1320;border:1px solid var(--line)');
+  d.textContent=text;$('#chatLog').appendChild(d);$('#chatLog').scrollTop=1e9;return d;
+}
+async function chatStatus(){
+  try{const s=await api('GET','/api/chat/status');
+    $('#chatStatus').textContent=s.available?'● 연결됨':'○ ANTHROPIC_API_KEY 필요';
+    $('#chatStatus').style.color=s.available?'var(--ok)':'var(--mut)';}catch(e){}
+}
+async function sendChat(){
+  const inp=$('#chatIn');const msg=inp.value.trim();if(!msg||!PID)return;
+  inp.value='';chatBubble('user',msg);
+  const thinking=chatBubble('assistant','…편집 중');$('#chatBtn').disabled=true;
+  try{const r=await api('POST','/api/projects/'+PID+'/chat',{message:msg});
+    thinking.textContent=r.reply+(r.actions&&r.actions.length?`  [${r.actions.map(a=>a.name).join(', ')}]`:'');
+    await loadProject();   // reflect the edits the agent made
+  }catch(e){thinking.textContent='오류: '+e.message;}
+  $('#chatBtn').disabled=false;inp.focus();
+}
+chatStatus();
 boot();
 </script>
 </body>
