@@ -1,0 +1,872 @@
+{
+  "name": "VideoForge Showcase",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "background": "#070912",
+  "tracks": [
+    {
+      "kind": "video",
+      "name": "bg",
+      "clips": [
+        {
+          "element": {
+            "type": "gradient",
+            "stops": [
+              [
+                0,
+                "#13224a"
+              ],
+              [
+                0.55,
+                "#0b1430"
+              ],
+              [
+                1,
+                "#070912"
+              ]
+            ],
+            "kind": "radial",
+            "angle": 90.0,
+            "center": [
+              0.5,
+              0.42
+            ],
+            "radius": 0.95
+          },
+          "start": 0,
+          "duration": 5.2
+        },
+        {
+          "element": {
+            "type": "gradient",
+            "stops": [
+              [
+                0,
+                "#0e1838"
+              ],
+              [
+                1,
+                "#070912"
+              ]
+            ],
+            "kind": "linear",
+            "angle": {
+              "default": 60,
+              "keyframes": [
+                {
+                  "time": 5.2,
+                  "value": 60
+                },
+                {
+                  "time": 10.2,
+                  "value": 110
+                }
+              ]
+            }
+          },
+          "start": 5.2,
+          "duration": 5.0
+        },
+        {
+          "element": {
+            "type": "gradient",
+            "stops": [
+              [
+                0,
+                "#1a2c5e"
+              ],
+              [
+                0.6,
+                "#0b1430"
+              ],
+              [
+                1,
+                "#070912"
+              ]
+            ],
+            "kind": "radial",
+            "angle": 90.0,
+            "center": [
+              0.5,
+              0.55
+            ],
+            "radius": 1.0
+          },
+          "start": 10.2,
+          "duration": 5.0
+        }
+      ]
+    },
+    {
+      "kind": "video",
+      "name": "mid",
+      "clips": [
+        {
+          "element": {
+            "type": "image",
+            "path": "/home/user/daboiji/assets/generated/texture.png",
+            "fit": "cover",
+            "size": [
+              1920,
+              1080
+            ]
+          },
+          "start": 0,
+          "duration": 5.2,
+          "blend_mode": "screen",
+          "transform": {
+            "opacity": {
+              "default": 0.0,
+              "keyframes": [
+                {
+                  "time": 0,
+                  "value": 0.0
+                },
+                {
+                  "time": 0.8,
+                  "value": 0.55
+                },
+                {
+                  "time": 4.4,
+                  "value": 0.55
+                },
+                {
+                  "time": 5.2,
+                  "value": 0.0
+                }
+              ]
+            },
+            "scale": {
+              "default": 1.06,
+              "keyframes": [
+                {
+                  "time": 0,
+                  "value": 1.06
+                },
+                {
+                  "time": 5.2,
+                  "value": 1.22
+                }
+              ]
+            }
+          }
+        },
+        {
+          "element": {
+            "type": "shape",
+            "shape": "rounded_rect",
+            "size": [
+              460,
+              360
+            ],
+            "fill": "#101b3a",
+            "stroke": "#5cc8ff",
+            "stroke_width": 3,
+            "radius": 28
+          },
+          "start": 5.9,
+          "duration": 4.299999999999999,
+          "transform": {
+            "position": [
+              400.0,
+              600.0
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.6,
+            "direction": "up",
+            "distance": 120
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.2,
+              "radius": 10
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "shape",
+            "shape": "rounded_rect",
+            "size": [
+              460,
+              360
+            ],
+            "fill": "#101b3a",
+            "stroke": "#9a7bff",
+            "stroke_width": 3,
+            "radius": 28
+          },
+          "start": 6.12,
+          "duration": 4.079999999999999,
+          "transform": {
+            "position": [
+              960.0,
+              600.0
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.6,
+            "direction": "up",
+            "distance": 120
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.2,
+              "radius": 10
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "shape",
+            "shape": "rounded_rect",
+            "size": [
+              460,
+              360
+            ],
+            "fill": "#101b3a",
+            "stroke": "#54e0b0",
+            "stroke_width": 3,
+            "radius": 28
+          },
+          "start": 6.340000000000001,
+          "duration": 3.8599999999999985,
+          "transform": {
+            "position": [
+              1520.0,
+              600.0
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.6,
+            "direction": "up",
+            "distance": 120
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.2,
+              "radius": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "video",
+      "name": "fg",
+      "clips": [
+        {
+          "element": {
+            "type": "image",
+            "path": "/home/user/daboiji/assets/generated/logo.png",
+            "size": [
+              360,
+              360
+            ]
+          },
+          "start": 0.3,
+          "duration": 4.7,
+          "transform": {
+            "position": [
+              960.0,
+              390.0
+            ],
+            "scale": {
+              "default": 0.4,
+              "keyframes": [
+                {
+                  "time": 0.3,
+                  "value": 0.4
+                },
+                {
+                  "time": 1.2,
+                  "value": 1.0,
+                  "easing": "ease_out_back"
+                }
+              ]
+            },
+            "opacity": {
+              "default": 0,
+              "keyframes": [
+                {
+                  "time": 0.3,
+                  "value": 0
+                },
+                {
+                  "time": 1.0,
+                  "value": 1.0
+                }
+              ]
+            },
+            "rotation": {
+              "default": -12,
+              "keyframes": [
+                {
+                  "time": 0.3,
+                  "value": -12
+                },
+                {
+                  "time": 1.4,
+                  "value": 0,
+                  "easing": "ease_out_cubic"
+                }
+              ]
+            }
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.55,
+              "threshold": 0.5,
+              "radius": 22
+            }
+          ],
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.5
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "VIDEOFORGE",
+            "size": 150,
+            "font": "display",
+            "color": "#eaf2ff",
+            "letter_spacing": 8
+          },
+          "start": 1.0,
+          "duration": 4.2,
+          "transform": {
+            "position": [
+              960.0,
+              670.0
+            ],
+            "scale": {
+              "default": 1.18,
+              "keyframes": [
+                {
+                  "time": 1.0,
+                  "value": 1.18
+                },
+                {
+                  "time": 1.9,
+                  "value": 1.0,
+                  "easing": "ease_out_cubic"
+                }
+              ]
+            },
+            "opacity": {
+              "default": 0,
+              "keyframes": [
+                {
+                  "time": 1.0,
+                  "value": 0
+                },
+                {
+                  "time": 1.6,
+                  "value": 1.0
+                }
+              ]
+            }
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.35,
+              "radius": 14
+            }
+          ],
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.5
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "a modular video engine \u00b7 MCP-ready",
+            "size": 40,
+            "font": "sans",
+            "color": "#5cc8ff",
+            "letter_spacing": 4
+          },
+          "start": 1.8,
+          "duration": 3.4,
+          "transform": {
+            "position": [
+              960.0,
+              790.0
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.7,
+            "direction": "up",
+            "distance": 40
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "BUILT FOR MOTION",
+            "size": 58,
+            "font": "sans-bold",
+            "color": "#eaf2ff",
+            "letter_spacing": 6
+          },
+          "start": 5.5,
+          "duration": 4.7,
+          "transform": {
+            "position": [
+              960.0,
+              230
+            ]
+          },
+          "transition_in": {
+            "type": "blur_in",
+            "duration": 0.6,
+            "radius": 26
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "KEYFRAMES",
+            "size": 52,
+            "font": "display",
+            "color": "#5cc8ff"
+          },
+          "start": 6.0,
+          "duration": 4.199999999999999,
+          "transform": {
+            "position": [
+              400.0,
+              530.0
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "easing \u00b7 animation curves",
+            "size": 28,
+            "font": "sans",
+            "color": "#b9c6e6",
+            "max_width": 380
+          },
+          "start": 6.1000000000000005,
+          "duration": 4.099999999999999,
+          "transform": {
+            "position": [
+              400.0,
+              630.0
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.6
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "LIGHTING",
+            "size": 52,
+            "font": "display",
+            "color": "#9a7bff"
+          },
+          "start": 6.22,
+          "duration": 3.979999999999999,
+          "transform": {
+            "position": [
+              960.0,
+              530.0
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "point \u00b7 ambient \u00b7 leaks",
+            "size": 28,
+            "font": "sans",
+            "color": "#b9c6e6",
+            "max_width": 380
+          },
+          "start": 6.32,
+          "duration": 3.879999999999999,
+          "transform": {
+            "position": [
+              960.0,
+              630.0
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.6
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "EFFECTS",
+            "size": 52,
+            "font": "display",
+            "color": "#54e0b0"
+          },
+          "start": 6.44,
+          "duration": 3.7599999999999985,
+          "transform": {
+            "position": [
+              1520.0,
+              530.0
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.5
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "glow \u00b7 grade \u00b7 grain",
+            "size": 28,
+            "font": "sans",
+            "color": "#b9c6e6",
+            "max_width": 380
+          },
+          "start": 6.540000000000001,
+          "duration": 3.6599999999999984,
+          "transform": {
+            "position": [
+              1520.0,
+              630.0
+            ]
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.6
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.4
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "Render anything.",
+            "size": 120,
+            "font": "display",
+            "color": "#eaf2ff"
+          },
+          "start": 10.5,
+          "duration": 4.7,
+          "transform": {
+            "position": [
+              960.0,
+              500.0
+            ],
+            "scale": {
+              "default": 1.1,
+              "keyframes": [
+                {
+                  "time": 10.5,
+                  "value": 1.1
+                },
+                {
+                  "time": 11.6,
+                  "value": 1.0,
+                  "easing": "ease_out_cubic"
+                }
+              ]
+            }
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 0.6
+          },
+          "effects": [
+            {
+              "type": "glow",
+              "intensity": 0.4,
+              "radius": 18
+            }
+          ],
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.6
+          }
+        },
+        {
+          "element": {
+            "type": "text",
+            "text": "from agents, in plain JSON.",
+            "size": 44,
+            "font": "serif",
+            "color": "#5cc8ff"
+          },
+          "start": 11.4,
+          "duration": 3.8,
+          "transform": {
+            "position": [
+              960.0,
+              630.0
+            ]
+          },
+          "transition_in": {
+            "type": "slide",
+            "duration": 0.7,
+            "direction": "up",
+            "distance": 40
+          },
+          "transition_out": {
+            "type": "fade",
+            "duration": 0.6
+          }
+        }
+      ]
+    },
+    {
+      "kind": "video",
+      "name": "light",
+      "clips": [
+        {
+          "element": {
+            "type": "solid",
+            "color": "#000000",
+            "size": [
+              1920,
+              1080
+            ]
+          },
+          "start": 0,
+          "duration": 5.2,
+          "blend_mode": "screen",
+          "effects": [
+            {
+              "type": "ambient",
+              "color": "#16294f",
+              "intensity": 0.25
+            },
+            {
+              "type": "light",
+              "position": [
+                0.5,
+                0.18
+              ],
+              "color": "#7db8ff",
+              "intensity": 0.8,
+              "radius": 0.8,
+              "falloff": 2.2
+            },
+            {
+              "type": "light_leak",
+              "color": "#ff8a4c",
+              "intensity": {
+                "default": 0.0,
+                "keyframes": [
+                  {
+                    "time": 0,
+                    "value": 0.0
+                  },
+                  {
+                    "time": 2.5,
+                    "value": 0.0
+                  },
+                  {
+                    "time": 3.6,
+                    "value": 0.45
+                  },
+                  {
+                    "time": 5.0,
+                    "value": 0.0
+                  }
+                ]
+              },
+              "position": {
+                "default": 0.1,
+                "keyframes": [
+                  {
+                    "time": 2.5,
+                    "value": 0.1
+                  },
+                  {
+                    "time": 5.0,
+                    "value": 1.0
+                  }
+                ]
+              },
+              "width": 0.22
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "solid",
+            "color": "#000000",
+            "size": [
+              1920,
+              1080
+            ]
+          },
+          "start": 5.2,
+          "duration": 5.0,
+          "blend_mode": "screen",
+          "effects": [
+            {
+              "type": "light",
+              "position": {
+                "default": 0.15,
+                "keyframes": [
+                  {
+                    "time": 5.2,
+                    "value": 0.15
+                  },
+                  {
+                    "time": 10.2,
+                    "value": 0.85
+                  }
+                ]
+              },
+              "color": "#6fa8ff",
+              "intensity": 0.5,
+              "radius": 0.9,
+              "falloff": 1.8
+            }
+          ]
+        },
+        {
+          "element": {
+            "type": "solid",
+            "color": "#000000",
+            "size": [
+              1920,
+              1080
+            ]
+          },
+          "start": 10.2,
+          "duration": 5.0,
+          "blend_mode": "screen",
+          "effects": [
+            {
+              "type": "light",
+              "position": [
+                0.5,
+                0.45
+              ],
+              "color": "#8fc0ff",
+              "intensity": {
+                "default": 0.2,
+                "keyframes": [
+                  {
+                    "time": 10.2,
+                    "value": 0.2
+                  },
+                  {
+                    "time": 11.5,
+                    "value": 0.7
+                  },
+                  {
+                    "time": 15.2,
+                    "value": 0.5
+                  }
+                ]
+              },
+              "radius": 0.95,
+              "falloff": 2.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "audio",
+      "name": "audio",
+      "clips": [
+        {
+          "path": "/home/user/daboiji/assets/generated/ambient.wav",
+          "start": 0.0,
+          "gain_db": -3.0,
+          "fade_in": 1.0,
+          "fade_out": 2.0
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "type": "color_grade",
+      "contrast": 1.06,
+      "saturation": 1.12,
+      "temperature": 0.05
+    },
+    {
+      "type": "vignette",
+      "amount": 0.45,
+      "softness": 0.7
+    },
+    {
+      "type": "grain",
+      "amount": 0.03
+    }
+  ]
+}

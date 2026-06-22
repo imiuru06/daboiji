@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+
+# Rendered output (reproducible via examples/)
+output/
+
+# Generated assets (reproducible via examples/generate_assets.py)
+assets/generated/
+
+# OS
+.DS_Store
