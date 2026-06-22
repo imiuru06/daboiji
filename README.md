@@ -114,7 +114,8 @@ Each **clip** places an **element** at an absolute `start`/`duration` and has:
 - **Lighting**: `light` (radial point light), `ambient`, `light_leak`.
 - **Atmosphere / keying / censor**: `fog`, `chroma_key` (green-screen),
   `mask` (region/image matte), `mosaic` (region pixelation),
-  `inpaint` (content-aware watermark/object removal via OpenCV).
+  `inpaint` (classical content-aware removal via OpenCV),
+  `lama_inpaint` (deep ML removal via LaMa — optional, `pip install '.[ml]'`).
 - **Transitions**: `fade`, `fade_color`, `slide`, `zoom`, `blur_in`, `wipe`.
 - **Easings**: linear, quad/cubic/quart, expo, back, elastic, bounce, sine …
 
@@ -125,10 +126,13 @@ tilts. Give each clip a `depth` (`1`=foreground … `0`=locked backdrop) for
 2.5D parallax. Region-targeted effects (mosaic/inpaint/mask) take a region
 spec: `{"shape":"rect|ellipse|polygon", "rect":[x,y,w,h], "feather":px}`.
 
-> **Note on `inpaint`:** classical (non-ML) removal — great for small
-> watermarks/logos over fairly flat backgrounds; large or highly textured
-> areas need an ML inpainter (e.g. LaMa), which can be wired in behind the
-> same region interface. Only remove watermarks from content you own.
+> **Removal backends.** `inpaint` is classical (OpenCV) — fast, great for
+> small watermarks over fairly flat backgrounds. `lama_inpaint` is a deep
+> LaMa model that hallucinates plausible texture, handling detailed/non-flat
+> backgrounds far better; it runs only on a padded ROI around the mask so it
+> stays fast even on CPU (`pip install '.[ml]'`). Both share the identical
+> region interface, so you can swap backends per shot. Only remove watermarks
+> from content you own.
 
 ## Layout
 ```

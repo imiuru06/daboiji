@@ -19,6 +19,13 @@ dependencies = [
     "mcp>=1.2.0",
 ]
 
+[project.optional-dependencies]
+# ML inpainting backend for `lama_inpaint` (deep large-mask inpainting).
+ml = [
+    "torch>=2.0",
+    "simple-lama-inpainting>=0.1.2",
+]
+
 [project.scripts]
 videoforge-mcp = "videoforge.mcp_server:main"
 

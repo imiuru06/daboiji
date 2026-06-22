@@ -73,3 +73,68 @@ class Inpaint(Effect):
         out = img.copy()
         out[..., :3] = fixed
         return out
+
+
+# Lazily-loaded LaMa model (heavy optional dependency).
+_LAMA = None
+
+
+def _get_lama():
+    global _LAMA
+    if _LAMA is None:
+        from simple_lama_inpainting import SimpleLama
+        _LAMA = SimpleLama()
+    return _LAMA
+
+
+@register("lama_inpaint")
+class LamaInpaint(Effect):
+    """ML inpainting via LaMa (deep large-mask inpainting).
+
+    Hallucinates plausible texture instead of diffusing edge colors, so it
+    handles watermarks over detailed/non-flat backgrounds far better than the
+    classical ``inpaint``. Requires ``torch`` + ``simple-lama-inpainting``
+    (optional deps). For speed the model runs only on a padded ROI cropped
+    around the mask, then the result is blended back through a feathered mask.
+
+    Params: region (region spec, required), pad (ROI padding px, default 48),
+    feather (mask soft edge for seamless blend, default 3)."""
+
+    def apply(self, img, ctx, t):
+        from PIL import Image
+        h, w = img.shape[:2]
+        region = self._params.get("region")
+        if region is None:
+            return img
+        spec = region.at(t) if hasattr(region, "at") else region
+        mask = build_mask(w, h, spec)
+        if mask.max() <= 0:
+            return img
+
+        ys, xs = np.where(mask > 0.05)
+        pad = int(self.p("pad", t, 48))
+        y0, y1 = max(0, ys.min() - pad), min(h, ys.max() + pad + 1)
+        x0, x1 = max(0, xs.min() - pad), min(w, xs.max() + pad + 1)
+
+        rgb = (np.clip(img[..., :3], 0, 1) * 255).astype(np.uint8)
+        roi = rgb[y0:y1, x0:x1]
+        roi_mask = (mask[y0:y1, x0:x1] > 0.05).astype(np.uint8) * 255
+
+        lama = _get_lama()
+        result = lama(Image.fromarray(roi, "RGB"), Image.fromarray(roi_mask, "L"))
+        result = np.asarray(result.convert("RGB").resize((roi.shape[1], roi.shape[0])),
+                            np.float32) / 255.0
+
+        # feather the mask for a seamless paste
+        feather = int(self.p("feather", t, 3))
+        blend = mask[y0:y1, x0:x1].copy()
+        if feather > 0:
+            from PIL import ImageFilter
+            bi = Image.fromarray((blend * 255).astype(np.uint8), "L").filter(
+                ImageFilter.GaussianBlur(feather))
+            blend = np.asarray(bi, np.float32) / 255.0
+        blend = blend[..., None]
+
+        out = img.copy()
+        out[y0:y1, x0:x1, :3] = result * blend + out[y0:y1, x0:x1, :3] * (1 - blend)
+        return out

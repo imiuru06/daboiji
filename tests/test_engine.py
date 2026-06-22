@@ -75,7 +75,7 @@ def test_spec_roundtrip(tmp_path=None):
 
 def test_new_effects_registered():
     fx = vf.capabilities()["effects"]
-    for name in ("fog", "mosaic", "inpaint", "chroma_key", "mask"):
+    for name in ("fog", "mosaic", "inpaint", "lama_inpaint", "chroma_key", "mask"):
         assert name in fx, name
 
 
