@@ -115,6 +115,7 @@
     <div class="scrub">
       <span class="muted" id="tlabel">0.0s</span>
       <input id="time" type="range" min="0" max="10" step="0.1" value="0" oninput="onScrub()">
+      <button class="sec" onclick="undoEdit()" title="마지막 편집 되돌리기">↶ 되돌리기</button>
       <button class="sec" onclick="refreshPreview()">미리보기</button>
       <button onclick="doRender()" id="renderBtn">렌더 ▶</button>
     </div>
@@ -277,8 +278,13 @@ function chatBubble(role,text){
 }
 async function chatStatus(){
   try{const s=await api('GET','/api/chat/status');
-    $('#chatStatus').textContent=s.available?'● 연결됨':'○ ANTHROPIC_API_KEY 필요';
-    $('#chatStatus').style.color=s.available?'var(--ok)':'var(--mut)';}catch(e){}
+    $('#chatStatus').textContent=s.available?('● '+s.provider+' · '+(s.model||'')):'○ LLM 프로바이더 미설정';
+    $('#chatStatus').style.color=s.available?'var(--ok)':'var(--mut)';
+    $('#chatStatus').title=s.hint||'';}catch(e){}
+}
+async function undoEdit(){
+  if(!PID)return;const r=await api('POST','/api/projects/'+PID+'/undo',{});
+  if(r.ok){await loadProject();toast('되돌림 ('+r.remaining+' 남음)');}else{toast('되돌릴 항목 없음');}
 }
 async function sendChat(){
   const inp=$('#chatIn');const msg=inp.value.trim();if(!msg||!PID)return;

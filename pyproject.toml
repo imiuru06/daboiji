@@ -25,9 +25,12 @@ ml = [
     "torch>=2.0",
     "simple-lama-inpainting>=0.1.2",
 ]
-# Natural-language editing in the Studio chat panel (Claude tool use).
+# Natural-language editing in the Studio chat panel (provider-agnostic tool use).
 ai = [
-    "anthropic>=0.40",
+    "anthropic>=0.40",      # Claude backend
+]
+ai-openai = [
+    "openai>=1.40",         # any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama, opencode, …)
 ]
 
 [project.scripts]

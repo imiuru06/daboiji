@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "videoforge": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "videoforge.mcp_server"],
+      "env": {
+        "PYTHONPATH": ".",
+        "VIDEOFORGE_STORE": ".vf_projects",
+        "VIDEOFORGE_OUTPUT": "output"
+      }
+    }
+  }
+}

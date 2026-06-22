@@ -130,19 +130,30 @@ lets you create projects, add backgrounds/text/callouts/effects, scrub a
 live preview frame, edit or delete a selected clip, edit the raw JSON spec,
 and render — all backed by the exact MCP tools.
 
-#### In-app AI editing (chat → edit → preview)
+#### Use it from other agents (Copilot, opencode, Cline, …)
+The MCP server is **provider-neutral** — any MCP client drives the same tools
+on the same shared store. Drop-in config templates live in
+[`examples/mcp-clients/`](examples/mcp-clients/): GitHub Copilot (VS Code agent
+mode, `.vscode/mcp.json`), opencode (`opencode.json`), Cline/Cursor/Windsurf
+(`mcpServers`). Point every client at the same `VIDEOFORGE_STORE` and they
+collaborate with the Studio UI and Claude Code on one project.
+
+#### In-app AI editing (chat → edit → preview), provider-agnostic
 The Studio also has a chat panel: type an instruction in natural language and
-Claude (`claude-opus-4-8`) drives the editing operations via tool use, on the
-same shared project — so "말로 지시 → 에이전트가 편집 → 즉시 프리뷰" happens in one
-screen. Enable it by installing the optional SDK and setting a key, then
-(re)starting the Studio:
+an LLM drives the editing tools on the shared project — "말로 지시 → 에이전트가
+편집 → 즉시 프리뷰" in one screen. The backend is pluggable:
 ```bash
-pip install '.[ai]'            # anthropic SDK
-export ANTHROPIC_API_KEY=sk-ant-...
-python -m videoforge.studio.server
+# Claude
+pip install '.[ai]'        && export ANTHROPIC_API_KEY=sk-ant-...
+# or any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama, opencode, …)
+pip install '.[ai-openai]' && export OPENAI_API_KEY=...  \
+    OPENAI_BASE_URL=https://api.openai.com/v1  VIDEOFORGE_LLM_MODEL=gpt-4o
+python -m videoforge.studio.server     # chip shows the active provider/model
 ```
-The chat tools are thin wrappers over the same MCP functions, so the agent's
-edits are identical to (and interoperate with) Claude Code's over MCP.
+Provider is chosen by `VIDEOFORGE_LLM_PROVIDER` (else auto-detected from the
+key present). The chat tools are thin wrappers over the same MCP functions, so
+the agent's edits interoperate with everything above. The UI also has **undo**
+(↶) — edits and chat turns are snapshotted server-side.
 
 ## The spec model
 A `Timeline` owns ordered **tracks**; video tracks composite **bottom → top**.

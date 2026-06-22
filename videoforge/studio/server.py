@@ -24,6 +24,25 @@ from ..service import OUTPUT_DIR, STORE
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# Per-project undo stack of prior spec states (capped). Studio-only, in-memory.
+_UNDO: dict = {}
+_UNDO_MAX = 25
+
+
+def _snapshot(pid: str) -> None:
+    if pid in STORE:
+        stack = _UNDO.setdefault(pid, [])
+        stack.append(json.dumps(STORE[pid]))
+        del stack[:-_UNDO_MAX]
+
+
+def _undo(pid: str) -> bool:
+    stack = _UNDO.get(pid)
+    if not stack:
+        return False
+    STORE[pid] = json.loads(stack.pop())
+    return True
+
 
 # (method, regex) -> handler(handler, match, body) returning (status, obj_or_bytes, ctype)
 ROUTES = []
@@ -73,7 +92,14 @@ def _get(h, m, body):
 
 @route("PUT", r"/api/projects/([0-9a-f]+)")
 def _put(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.update_project(m.group(1), body["spec"]), None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/undo")
+def _undo_route(h, m, body):
+    ok = _undo(m.group(1))
+    return 200, {"ok": ok, "remaining": len(_UNDO.get(m.group(1), []))}, None
 
 
 @route("GET", r"/api/projects/([0-9a-f]+)/clips")
@@ -83,42 +109,50 @@ def _clips(h, m, body):
 
 @route("POST", r"/api/projects/([0-9a-f]+)/text")
 def _text(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.add_text(m.group(1), **body), None
 
 
 @route("POST", r"/api/projects/([0-9a-f]+)/background")
 def _bg(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.add_background(m.group(1), **body), None
 
 
 @route("POST", r"/api/projects/([0-9a-f]+)/callout")
 def _callout(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.add_callout(m.group(1), **body), None
 
 
 @route("POST", r"/api/projects/([0-9a-f]+)/media")
 def _media(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.add_media(m.group(1), **body), None
 
 
 @route("POST", r"/api/projects/([0-9a-f]+)/effect")
 def _effect(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.add_effect(m.group(1), effect=body["effect"],
                              track=body.get("track"), clip_index=body.get("clip_index")), None
 
 
 @route("POST", r"/api/projects/([0-9a-f]+)/camera")
 def _camera(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.set_camera(m.group(1), **body), None
 
 
 @route("PATCH", r"/api/projects/([0-9a-f]+)/clips/([^/]+)/(-?\d+)")
 def _update_clip(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.update_clip(m.group(1), m.group(2), int(m.group(3)), body["patch"]), None
 
 
 @route("DELETE", r"/api/projects/([0-9a-f]+)/clips/([^/]+)/(-?\d+)")
 def _remove_clip(h, m, body):
+    _snapshot(m.group(1))
     return 200, M.remove_clip(m.group(1), m.group(2), int(m.group(3))), None
 
 
@@ -135,17 +169,19 @@ def _preview(h, m, body):
 @route("GET", r"/api/chat/status")
 def _chat_status(h, m, body):
     from . import chat
-    return 200, {"available": chat.available()}, None
+    return 200, chat.status(), None
 
 
 @route("POST", r"/api/projects/([0-9a-f]+)/chat")
 def _chat(h, m, body):
     from . import chat
-    if not chat.available():
+    st = chat.status()
+    if not st.get("available"):
         return 200, {"available": False, "reply":
-                     "AI 채팅은 ANTHROPIC_API_KEY 가 설정되어야 동작합니다 (anthropic SDK 포함). "
-                     "키를 설정하고 스튜디오를 재시작하세요."}, None
-    result = chat.run_chat(m.group(1), body["message"])
+                     "AI 채팅을 켜려면 LLM 프로바이더를 설정하세요. " + st.get("hint", "")}, None
+    pid = m.group(1)
+    _snapshot(pid)                       # enable undo of the agent's edits
+    result = chat.run_chat(pid, body["message"])
     result["available"] = True
     return 200, result, None
 

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "videoforge": {
+      "type": "local",
+      "command": ["python", "-m", "videoforge.mcp_server"],
+      "enabled": true,
+      "environment": {
+        "PYTHONPATH": ".",
+        "VIDEOFORGE_STORE": ".vf_projects",
+        "VIDEOFORGE_OUTPUT": "output"
+      }
+    }
+  }
+}
