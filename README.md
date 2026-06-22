@@ -112,8 +112,23 @@ Each **clip** places an **element** at an absolute `start`/`duration` and has:
 - **Effects**: `color_grade`, `lift_gamma_gain`, `blur`, `sharpen`, `glow`,
   `vignette`, `grain`, `chromatic_aberration`.
 - **Lighting**: `light` (radial point light), `ambient`, `light_leak`.
+- **Atmosphere / keying / censor**: `fog`, `chroma_key` (green-screen),
+  `mask` (region/image matte), `mosaic` (region pixelation),
+  `inpaint` (content-aware watermark/object removal via OpenCV).
 - **Transitions**: `fade`, `fade_color`, `slide`, `zoom`, `blur_in`, `wipe`.
 - **Easings**: linear, quad/cubic/quart, expo, back, elastic, bounce, sine …
+
+### Camera & parallax
+A keyframeable virtual camera (`project.camera(pan=…, zoom=…, rotation=…)`)
+applies to the whole composition — push-ins, pans, dolly, whip-pans, dutch
+tilts. Give each clip a `depth` (`1`=foreground … `0`=locked backdrop) for
+2.5D parallax. Region-targeted effects (mosaic/inpaint/mask) take a region
+spec: `{"shape":"rect|ellipse|polygon", "rect":[x,y,w,h], "feather":px}`.
+
+> **Note on `inpaint`:** classical (non-ML) removal — great for small
+> watermarks/logos over fairly flat backgrounds; large or highly textured
+> areas need an ML inpainter (e.g. LaMa), which can be wired in behind the
+> same region interface. Only remove watermarks from content you own.
 
 ## Layout
 ```
