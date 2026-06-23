@@ -349,6 +349,12 @@ class Handler(BaseHTTPRequestHandler):
                          else "image/png" if name.endswith(".png") else "application/octet-stream")
                 with open(fp, "rb") as f:
                     return self._send(200, f.read(), ctype)
+        if path.endswith((".css", ".js")):       # static UI assets next to the HTML
+            fp = os.path.join(HERE, os.path.basename(path))
+            if os.path.isfile(fp):
+                ctype = "text/css" if path.endswith(".css") else "application/javascript"
+                with open(fp, "rb") as f:
+                    return self._send(200, f.read(), ctype + "; charset=utf-8")
         return self._send(404, {"error": "not found"})
 
     def _dispatch(self):
