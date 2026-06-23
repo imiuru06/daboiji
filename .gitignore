@@ -29,5 +29,8 @@ assets/generated/
 # Frame handoff scratch (intermediate frames extracted from uploaded clips)
 samples/handoff/
 
+# Working source clips (uploaded generation outputs, joined into final render)
+samples/*.mp4
+
 # OS
 .DS_Store
