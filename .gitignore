@@ -34,3 +34,13 @@ samples/*.mp4
 
 # OS
 .DS_Store
+
+# Secrets / API keys — NEVER commit (JAMENDO_CLIENT_ID, FREESOUND_API_KEY, ...)
+.env
+.env.*
+!.env.example
+
+# Fetched music (downloaded via fetch_music; re-fetchable from providers)
+assets/audio/*.mp3
+assets/audio/*.wav
+!assets/audio/recovery_bed.*
