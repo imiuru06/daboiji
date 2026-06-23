@@ -93,6 +93,31 @@ Register it with any MCP client (e.g. Claude):
 | `preview_frame` · `render_range` | Single-frame / time-window preview |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
+| `list_music_sources` · `search_music` · `fetch_music` | Pull royalty-free / CC music straight from provider APIs (Jamendo, Freesound) |
+
+## Royalty-free music (`fetch_music`)
+Score a clip without leaving the toolchain. `search_music` returns candidates
+(title / artist / duration / licence / attribution) and `fetch_music`
+downloads one into `DABWAYO_MUSIC_DIR` (default `assets/audio`) and registers
+it as a tracked `music` asset, so it flows into compose / render / publish.
+
+These call provider APIs **directly**, so run the server where it has open
+internet (e.g. your VM), and set the relevant key:
+
+```bash
+export JAMENDO_CLIENT_ID=...     # https://devportal.jamendo.com  (primary: full tracks)
+export FREESOUND_API_KEY=...     # https://freesound.org/apiv2/apply  (ambience / SFX layers)
+```
+
+```text
+search_music("hopeful emotional piano", tags="piano,calm,cinematic", max_duration=90)
+fetch_music("hopeful emotional piano", pick=0)     # downloads + registers the top hit
+```
+
+> Licences vary per track. Every result carries `license_url` and an
+> `attribution` string — verify terms (attribution / commercial use) before
+> publishing. Pixabay music is intentionally **not** wired up: it has no
+> official music REST API, so programmatic use would mean scraping.
 
 ## Generative video (text→video / image→video)
 `generate_video` turns a prompt (t2v) or a still image (i2v) into a short MP4
