@@ -32,20 +32,29 @@ import imageio.v2 as iio
 import imageio_ffmpeg
 import numpy as np
 
+try:
+    import cv2
+except Exception:  # noqa: BLE001
+    cv2 = None
+
 FF = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def profile(path: str, n: int = 16) -> dict:
-    """Sample n frames and return mean R/G/B, luminance and saturation."""
+    """Sample n frames -> mean R/G/B, luminance, saturation and sharpness."""
     r = iio.get_reader(path)
     tot = r.count_frames()
     idx = np.linspace(0, tot - 1, n).astype(int)
-    px = []
+    px, sharp = [], []
     for i in idx:
         try:
-            px.append((r.get_data(int(i)).astype(np.float32) / 255.0).reshape(-1, 3))
+            f = r.get_data(int(i))
         except Exception:  # noqa: BLE001
-            pass
+            continue
+        px.append((f.astype(np.float32) / 255.0).reshape(-1, 3))
+        if cv2 is not None:
+            g = cv2.cvtColor(f, cv2.COLOR_RGB2GRAY).astype(np.float32)
+            sharp.append(float(cv2.Laplacian(g, cv2.CV_32F).var()))
     r.close()
     flat = np.concatenate(px)
     mx, mn = flat.max(1), flat.min(1)
@@ -53,7 +62,8 @@ def profile(path: str, n: int = 16) -> dict:
     m = flat.mean(0)
     lum = float((flat @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean())
     return {"R": float(m[0]), "G": float(m[1]), "B": float(m[2]),
-            "L": lum, "sat": float(sat.mean())}
+            "L": lum, "sat": float(sat.mean()),
+            "sharp": float(np.mean(sharp)) if sharp else 0.0}
 
 
 def duration(path: str) -> float:
@@ -88,8 +98,17 @@ def conform_filter(prof: dict, ref: dict, strength: float) -> str:
     gr, gg, gb = g("R"), g("G"), g("B")
     sat = float(np.clip(1.0 + (ref["sat"] / max(prof["sat"], 1e-6) - 1.0) * strength * 0.5,
                         0.9, 1.12))
-    return (f"colorchannelmixer=rr={gr:.4f}:gg={gg:.4f}:bb={gb:.4f},"
-            f"eq=saturation={sat:.4f}")
+    f = (f"colorchannelmixer=rr={gr:.4f}:gg={gg:.4f}:bb={gb:.4f},"
+         f"eq=saturation={sat:.4f}")
+    # sharpness match: gently sharpen a softer clip toward the reference
+    if prof.get("sharp") and ref.get("sharp"):
+        ratio = ref["sharp"] / max(prof["sharp"], 1e-6)
+        if ratio > 1.05:
+            # deliberately under-correct: closes most of the gap, never crunchy
+            amt = float(np.clip((ratio - 1.0) * strength, 0.0, 0.8))
+            if amt > 0.05:
+                f += f",unsharp=5:5:{amt:.3f}:5:5:0.0"
+    return f
 
 
 def main() -> int:
@@ -126,7 +145,8 @@ def main() -> int:
             f = conform_filter(p, ref, a.strength)
             vf.append(f)
             warm_s = (p["R"] / p["B"]); warm_r = (ref["R"] / ref["B"])
-            print(f"  clip{i}: warm {warm_s:.2f}->{warm_r:.2f}, sat {p['sat']:.3f}->{ref['sat']:.3f}  [{f}]")
+            print(f"  clip{i}: warm {warm_s:.2f}->{warm_r:.2f}, sat {p['sat']:.3f}->{ref['sat']:.3f}, "
+                  f"sharp {p.get('sharp',0):.1f}->{ref.get('sharp',0):.1f}\n         [{f}]")
 
     # seam decision per boundary
     seams = []
