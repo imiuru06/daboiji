@@ -126,6 +126,7 @@
   .tl-grip{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:2}
   .tl-grip.l{left:0;border-radius:5px 0 0 5px}.tl-grip.r{right:0;border-radius:0 5px 5px 0}
   .tl-grip:hover{background:rgba(255,255,255,.4)}
+  .tl-lane.drophover{box-shadow:inset 0 0 0 2px var(--acc);background:#13243a}
   .guide{position:absolute;background:var(--warn);box-shadow:0 0 6px var(--warn);pointer-events:none;z-index:5}
   .guide.v{width:1px}.guide.h{height:1px}
   .tl-rulerrow{height:20px}
@@ -408,7 +409,7 @@ function renderTimeline(tracks){
   host.innerHTML=rulerHTML(dur)+tracks.map(tr=>`
     <div class="tl-row">
       <div class="tl-label" title="${tr.track}">${tr.track}</div>
-      <div class="tl-lane">${tr.clips.map(c=>{
+      <div class="tl-lane" data-track="${tr.track}">${tr.clips.map(c=>{
         const left=Math.min(98,Math.max(0,(c.start||0)/dur*100));
         const w=Math.min(100-left,Math.max(3,((c.duration||0)/dur)*100));
         const sel=SEL&&SEL.track===tr.track&&SEL.index===c.index;
@@ -465,11 +466,23 @@ function startClipDrag(e,el,mode){
   if(tr)tr.clips.forEach((c,i)=>{if(i===index)return;const s=c.start||0,en=s+(c.duration||0);
     if(en<=oStart+1e-6)lb=Math.max(lb,en);if(s>=oEnd-1e-6)rb=Math.min(rb,s);});
   TLD={el,mode,track,index,lanePx:lr.width,dur,startX:e.clientX,
-       origStart:oStart,origDur:+el.dataset.dur,moved:false,edges:collectEdges(track,index),lb,rb};
+       origStart:oStart,origDur:+el.dataset.dur,moved:false,edges:collectEdges(track,index),
+       lb,rb,srcLb:lb,srcRb:rb,srcTrack:track,curTrack:track};
   window.addEventListener('mousemove',onClipDrag);window.addEventListener('mouseup',endClipDrag);
 }
+function trackKind(name){const t=SPEC&&SPEC.tracks.find(x=>x.name===name);return t?(t.kind||'video'):'video';}
 function onClipDrag(e){
   if(!TLD)return;if(Math.abs(e.clientX-TLD.startX)>2)TLD.moved=true;
+  if(TLD.mode==='move'){                          // detect target track under cursor
+    let hov=null;document.querySelectorAll('.tl-lane').forEach(l=>{const b=l.getBoundingClientRect();
+      if(e.clientY>=b.top&&e.clientY<=b.bottom&&trackKind(l.dataset.track)===trackKind(TLD.srcTrack))hov=l.dataset.track;});
+    const tgt=hov||TLD.srcTrack;
+    if(tgt!==TLD.curTrack){
+      TLD.curTrack=tgt;TLD.moved=true;
+      document.querySelectorAll('.tl-lane').forEach(l=>l.classList.toggle('drophover',l.dataset.track===tgt&&tgt!==TLD.srcTrack));
+      if(tgt===TLD.srcTrack){TLD.lb=TLD.srcLb;TLD.rb=TLD.srcRb;}else{TLD.lb=0;TLD.rb=TLD.dur;}
+    }
+  }
   const sPerPx=TLD.dur/TLD.lanePx,thr=8*sPerPx,min=0.1;
   const delta=(e.clientX-TLD.startX)*sPerPx;
   let start=TLD.origStart,d=TLD.origDur;
@@ -480,12 +493,25 @@ function onClipDrag(e){
   const left=Math.min(98,Math.max(0,TLD.curStart/TLD.dur*100));
   const w=Math.min(100-left,Math.max(1,TLD.curDur/TLD.dur*100));
   TLD.el.style.left=left+'%';TLD.el.style.width=w+'%';
-  const b=$('#badge');if(b)b.textContent=`${TLD.curStart.toFixed(2)}s · 길이 ${TLD.curDur.toFixed(2)}s`;
+  const cross=TLD.mode==='move'&&TLD.curTrack!==TLD.srcTrack;
+  const b=$('#badge');if(b)b.textContent=(cross?`→ ${TLD.curTrack} · `:'')+`${TLD.curStart.toFixed(2)}s · 길이 ${TLD.curDur.toFixed(2)}s`;
 }
 async function endClipDrag(){
   window.removeEventListener('mousemove',onClipDrag);window.removeEventListener('mouseup',endClipDrag);
+  document.querySelectorAll('.tl-lane.drophover').forEach(l=>l.classList.remove('drophover'));
   const d=TLD;TLD=null;if(!d)return;
   if(!d.moved){selectClip(d.track,d.index);return;}
+  // moved to a different track? relocate the clip object via spec PUT (undo-able)
+  if(d.mode==='move'&&d.curTrack&&d.curTrack!==d.srcTrack){
+    const src=trackOf(d.srcTrack),tgt=trackOf(d.curTrack);
+    if(src&&tgt){
+      const clip=src.clips.splice(d.index,1)[0];clip.start=d.curStart;tgt.clips.push(clip);
+      const ni=tgt.clips.length-1;SEL={track:d.curTrack,index:ni};
+      try{await putSpec();selectClip(d.curTrack,ni);toast(`'${d.curTrack}' 트랙으로 이동`);}
+      catch(err){toast('이동 오류: '+err.message);}
+      return;
+    }
+  }
   try{await api('PATCH',`/api/projects/${PID}/clips/${d.track}/${d.index}`,{patch:{start:d.curStart,duration:d.curDur}});
     await loadProject();selectClip(d.track,d.index);toast(`클립: ${d.curStart.toFixed(2)}s +${d.curDur.toFixed(2)}s`);
   }catch(err){toast('오류: '+err.message);}
