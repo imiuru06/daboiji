@@ -15,6 +15,10 @@ output/
 # Studio / MCP shared project store (runtime data)
 .vf_projects/
 
+# Local verification scratch dirs (scripts/verify_upload.py self-test)
+.vf_store_test/
+.vf_output_test/
+
 # Generated assets (reproducible via examples/generate_assets.py)
 assets/generated/
 

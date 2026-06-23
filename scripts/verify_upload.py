@@ -8,6 +8,10 @@ full durable-publish chain without needing any off-box sandbox to reach the VM:
                          -> shows up in /api/index  (gallery)
                          -> shows up in /api/dashboard activity (dashboard)
 
+With no --file it auto-picks the newest *.mp4 from samples/ (where the sandbox
+commits rendered clips) or DABWAYO_OUTPUT, so the usual VM flow is just
+``git pull`` then run this script — no filename to type.
+
 Usage:
     # direct to the Studio process (recommended on the VM):
     python3 scripts/verify_upload.py
@@ -16,7 +20,7 @@ Usage:
     DABWAYO_STUDIO_URL=https://noahrun.duckdns.org/dabwayo \
     DABWAYO_STUDIO_KEY=abce python3 scripts/verify_upload.py
 
-    # upload a specific file instead of the synthesized test clip:
+    # override the auto-pick with a specific file:
     python3 scripts/verify_upload.py --file ~/projects/daboiji/.vf_output/SUNSET_DRIVE.mp4
 
 Exit code is 0 only if every check passes.
@@ -37,6 +41,12 @@ import urllib.request
 BASE = os.environ.get("DABWAYO_STUDIO_URL", "http://127.0.0.1:8090").rstrip("/")
 KEY = os.environ.get("DABWAYO_STUDIO_KEY", "abce")
 OUTPUT_DIR = os.environ.get("DABWAYO_OUTPUT", os.path.abspath(".vf_output"))
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Where to look for the clip to upload when --file is omitted (newest wins).
+# samples/ is where the sandbox commits rendered clips, so the VM never has to
+# type a filename: just `git pull` then run this script.
+SEARCH_DIRS = [d for d in (os.environ.get("DABWAYO_UPLOAD_DIR"),
+                           os.path.join(_REPO, "samples"), OUTPUT_DIR) if d]
 
 GREEN, RED, DIM, RST = "\033[32m", "\033[31m", "\033[2m", "\033[0m"
 _fails = 0
@@ -85,8 +95,8 @@ def _payload() -> tuple[str, bytes, str]:
         p = os.path.expanduser(ARGS.file)
         with open(p, "rb") as f:
             return os.path.basename(p), f.read(), f"file {p}"
-    vids = sorted(glob.glob(os.path.join(OUTPUT_DIR, "*.mp4")),
-                  key=os.path.getmtime, reverse=True)
+    vids = [p for d in SEARCH_DIRS for p in glob.glob(os.path.join(d, "*.mp4"))]
+    vids.sort(key=os.path.getmtime, reverse=True)
     if vids:
         with open(vids[0], "rb") as f:
             return os.path.basename(vids[0]), f.read(), f"newest clip {vids[0]}"
@@ -189,6 +199,7 @@ def _finish() -> int:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--file", help="media file to upload (default: newest "
-                    "*.mp4 in DABWAYO_OUTPUT, else a synthesized stub)")
+                    "*.mp4 in samples/ or DABWAYO_OUTPUT, else a synthesized "
+                    "stub) — so you normally don't pass a filename at all")
     ARGS = ap.parse_args()
     sys.exit(main())
