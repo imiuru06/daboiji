@@ -117,11 +117,17 @@
   .tl-lane{position:relative;height:34px;background:var(--panel);border:1px solid var(--line);
            border-radius:7px;overflow:hidden}
   .tl-clip{position:absolute;top:3px;bottom:3px;border-radius:5px;display:flex;align-items:center;
-           padding:0 7px;font-size:11px;color:#04121f;font-weight:600;cursor:pointer;overflow:hidden;
-           box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);transition:.1s}
-  .tl-clip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+           padding:0 9px;font-size:11px;color:#04121f;font-weight:600;cursor:grab;overflow:hidden;
+           box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);transition:filter .1s}
+  .tl-clip:active{cursor:grabbing}
+  .tl-clip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;flex:1}
   .tl-clip:hover{filter:brightness(1.1)}
   .tl-clip.sel{box-shadow:inset 0 0 0 2px #fff,0 2px 10px rgba(0,0,0,.4);z-index:2}
+  .tl-grip{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:2}
+  .tl-grip.l{left:0;border-radius:5px 0 0 5px}.tl-grip.r{right:0;border-radius:0 5px 5px 0}
+  .tl-grip:hover{background:rgba(255,255,255,.4)}
+  .guide{position:absolute;background:var(--warn);box-shadow:0 0 6px var(--warn);pointer-events:none;z-index:5}
+  .guide.v{width:1px}.guide.h{height:1px}
   .tl-empty{color:var(--mut2);font-size:12px;padding:22px 14px;text-align:center}
   .tl-playhead{position:absolute;top:0;width:2px;background:var(--brand);box-shadow:0 0 8px var(--brand);
                pointer-events:none;display:none;z-index:3}
@@ -396,45 +402,114 @@ function renderTimeline(tracks){
         const w=Math.min(100-left,Math.max(3,((c.duration||0)/dur)*100));
         const sel=SEL&&SEL.track===tr.track&&SEL.index===c.index;
         const lbl=`#${c.index} ${c.type||''}`;
-        return `<div class="tl-clip${sel?' sel':''}" style="left:${left}%;width:${w}%;background:${clipColor(c.type)}"
-          title="${(c.preview||lbl).replace(/"/g,'&quot;')}" onclick="selectClip('${tr.track}',${c.index})"><span>${lbl}</span></div>`;
+        return `<div class="tl-clip${sel?' sel':''}" data-track="${tr.track}" data-index="${c.index}"
+          data-start="${c.start||0}" data-dur="${c.duration||0}"
+          style="left:${left}%;width:${w}%;background:${clipColor(c.type)}"
+          title="${(c.preview||lbl).replace(/"/g,'&quot;')}">
+          <div class="tl-grip l"></div><span>${lbl}</span><div class="tl-grip r"></div></div>`;
       }).join('')}</div>
     </div>`).join('');
-  updatePlayhead();
+  wireTimeline();updatePlayhead();
 }
-function selectClip(track,index){
-  SEL={track,index};
-  const tr=SPEC.tracks.find(t=>t.name===track);if(!tr)return;
-  const clip=tr.clips[index];const el=clip.element||{};
+function renderTimelineFromSpec(){
+  if(!SPEC)return;
+  renderTimeline(SPEC.tracks.map(t=>({track:t.name,clips:t.clips.map((c,i)=>(
+    {index:i,type:(c.element||{}).type,start:c.start,duration:c.duration,preview:(c.element||{}).text}))})));
+}
+// ---- timeline: drag to move, edge-grip to resize, with snapping ----
+let TLD=null;
+function wireTimeline(){
+  document.querySelectorAll('.tl-clip').forEach(el=>{
+    el.querySelector('.tl-grip.l').addEventListener('mousedown',e=>startClipDrag(e,el,'l'));
+    el.querySelector('.tl-grip.r').addEventListener('mousedown',e=>startClipDrag(e,el,'r'));
+    el.addEventListener('mousedown',e=>{if(e.target.classList.contains('tl-grip'))return;startClipDrag(e,el,'move');});
+  });
+}
+function collectEdges(track,skip){
+  const dur=parseFloat($('#time').max)||10;const out=[0,dur,parseFloat($('#time').value)||0];
+  (SPEC.tracks||[]).forEach(tr=>tr.clips.forEach((c,i)=>{
+    if(tr.name===track&&i===skip)return;out.push(c.start||0,(c.start||0)+(c.duration||0));}));
+  return out;
+}
+function snapSec(v,edges,thr){let best=v,bd=thr;edges.forEach(e=>{const d=Math.abs(v-e);if(d<bd){bd=d;best=e;}});return best;}
+function startClipDrag(e,el,mode){
+  e.preventDefault();e.stopPropagation();
+  const track=el.dataset.track,index=+el.dataset.index;
+  SEL={track,index};showInspector();
+  document.querySelectorAll('.tl-clip').forEach(c=>c.classList.toggle('sel',c===el));
+  const lr=el.parentElement.getBoundingClientRect();
+  TLD={el,mode,track,index,lanePx:lr.width,dur:parseFloat($('#time').max)||10,startX:e.clientX,
+       origStart:+el.dataset.start,origDur:+el.dataset.dur,moved:false,edges:collectEdges(track,index)};
+  window.addEventListener('mousemove',onClipDrag);window.addEventListener('mouseup',endClipDrag);
+}
+function onClipDrag(e){
+  if(!TLD)return;if(Math.abs(e.clientX-TLD.startX)>2)TLD.moved=true;
+  const sPerPx=TLD.dur/TLD.lanePx,thr=8*sPerPx,min=0.1;
+  const delta=(e.clientX-TLD.startX)*sPerPx;
+  let start=TLD.origStart,d=TLD.origDur;
+  if(TLD.mode==='move'){start=snapSec(TLD.origStart+delta,TLD.edges,thr);start=Math.max(0,Math.min(TLD.dur-d,start));}
+  else if(TLD.mode==='r'){let end=snapSec(TLD.origStart+TLD.origDur+delta,TLD.edges,thr);d=Math.max(min,Math.min(TLD.dur-TLD.origStart,end-TLD.origStart));}
+  else{let ns=snapSec(TLD.origStart+delta,TLD.edges,thr);ns=Math.max(0,Math.min(TLD.origStart+TLD.origDur-min,ns));d=TLD.origStart+TLD.origDur-ns;start=ns;}
+  TLD.curStart=Math.round(start*100)/100;TLD.curDur=Math.round(d*100)/100;
+  const left=Math.min(98,Math.max(0,TLD.curStart/TLD.dur*100));
+  const w=Math.min(100-left,Math.max(1,TLD.curDur/TLD.dur*100));
+  TLD.el.style.left=left+'%';TLD.el.style.width=w+'%';
+  const b=$('#badge');if(b)b.textContent=`${TLD.curStart.toFixed(2)}s · 길이 ${TLD.curDur.toFixed(2)}s`;
+}
+async function endClipDrag(){
+  window.removeEventListener('mousemove',onClipDrag);window.removeEventListener('mouseup',endClipDrag);
+  const d=TLD;TLD=null;if(!d)return;
+  if(!d.moved){selectClip(d.track,d.index);return;}
+  try{await api('PATCH',`/api/projects/${PID}/clips/${d.track}/${d.index}`,{patch:{start:d.curStart,duration:d.curDur}});
+    await loadProject();selectClip(d.track,d.index);toast(`클립: ${d.curStart.toFixed(2)}s +${d.curDur.toFixed(2)}s`);
+  }catch(err){toast('오류: '+err.message);}
+}
+function selectClip(track,index){SEL={track,index};showInspector();renderTimelineFromSpec();}
+function showInspector(){
+  const clip=selectedClip();if(!clip){return;}
+  const el=clip.element||{};const type=el.type;
   const pos=(clip.transform&&clip.transform.position)||['',''];
+  const opt=(arr,cur)=>arr.map(a=>`<option ${a===cur?'selected':''}>${a}</option>`).join('');
+  let extra='';
+  if(type==='text'){
+    extra=`
+      <div class="row"><div><label>크기</label><input id="e_size" type="number" value="${el.size??''}"></div>
+        <div><label>정렬</label><select id="e_align">${opt(['left','center','right'],el.align)}</select></div></div>
+      <div class="field"><label>폰트</label><select id="e_font">${opt(['sans','sans-bold','display','serif','mono','kr-bold'],el.font)}</select></div>
+      <div class="field"><label>색</label><input id="e_color" value="${el.color||'#ffffff'}"></div>`;
+  }else if(type==='callout'){
+    extra=`
+      <div class="row"><div><label>글자크기</label><input id="e_font_size" type="number" value="${el.font_size??''}"></div>
+        <div><label>꼬리</label><select id="e_tail_side">${opt(['bottom','top','left','right'],el.tail_side)}</select></div></div>
+      <div class="row"><div><label>배경</label><input id="e_fill" value="${el.fill||'#ffffff'}"></div>
+        <div><label>글자색</label><input id="e_color" value="${el.color||'#0b0e16'}"></div></div>`;
+  }
   $('#inspectorBody').innerHTML=`
-    <div class="clip-meta">${track} · #${index} · ${el.type||''}</div>
-    ${el.text!==undefined?`<div class="field"><label>텍스트</label><textarea id="eT">${(el.text||'').replace(/</g,'&lt;')}</textarea></div>`:''}
-    ${el.color!==undefined?`<div class="field"><label>색</label><input id="eC" value="${el.color||''}"></div>`:''}
-    <div class="row"><div><label>시작(s)</label><input id="eS" type="number" step="0.1" value="${clip.start??0}"></div>
-      <div><label>길이(s)</label><input id="eD" type="number" step="0.1" value="${clip.duration??0}"></div></div>
-    <div class="row" style="margin-top:8px"><div><label>X</label><input id="eX" type="number" value="${pos[0]}"></div>
-      <div><label>Y</label><input id="eY" type="number" value="${pos[1]}"></div></div>
-    ${['solid','gradient'].includes(el.type)?'':'<p class="hint" style="margin:8px 0 0">💡 미리보기 화면에서 <b>◯ 핸들을 드래그</b>해 위치를 옮길 수 있어요.</p>'}
+    <div class="clip-meta">${SEL.track} · #${SEL.index} · ${type||''}</div>
+    ${el.text!==undefined?`<div class="field"><label>텍스트</label><textarea id="e_text">${(el.text||'').replace(/</g,'&lt;')}</textarea></div>`:''}
+    ${extra}
+    <div class="row"><div><label>시작(s)</label><input id="e_start" type="number" step="0.1" value="${clip.start??0}"></div>
+      <div><label>길이(s)</label><input id="e_dur" type="number" step="0.1" value="${clip.duration??0}"></div></div>
+    <div class="row" style="margin-top:8px"><div><label>X</label><input id="e_x" type="number" value="${pos[0]}"></div>
+      <div><label>Y</label><input id="e_y" type="number" value="${pos[1]}"></div></div>
+    ${['solid','gradient'].includes(type)?'':'<p class="hint" style="margin:8px 0 0">💡 미리보기에서 <b>◯ 핸들</b> 드래그 · 타임라인에서 <b>클립/가장자리 드래그</b>로 위치·길이 조절</p>'}
     <div class="row" style="margin-top:12px">
       <button class="btn primary" style="flex:2" onclick="applyClip()">적용</button>
-      <button class="btn danger" onclick="delClip()">삭제</button>
-    </div>`;
-  showTab('insp','props');
-  renderTimeline(SPEC.tracks.map(t=>({track:t.name,clips:t.clips.map((c,i)=>({index:i,type:(c.element||{}).type,start:c.start,duration:c.duration,preview:(c.element||{}).text}))})));
-  drawHandle();
+      <button class="btn danger" onclick="delClip()">삭제</button></div>`;
+  showTab('insp','props');drawHandle();
 }
 async function applyClip(){
-  const patch={element:{}};
-  const T=$('#eT'),C=$('#eC'),S=$('#eS'),D=$('#eD'),X=$('#eX'),Y=$('#eY');
-  if(T)patch.element.text=T.value;
-  if(C)patch.element.color=C.value;
-  if(!Object.keys(patch.element).length)delete patch.element;
-  if(S)patch.start=parseFloat(S.value);
-  if(D)patch.duration=parseFloat(D.value);
-  if(X&&Y&&X.value!==''&&Y.value!=='')patch.transform={position:[parseFloat(X.value),parseFloat(Y.value)]};
+  const g=k=>{const n=$('#e_'+k);return n?n.value:undefined;};
+  const patch={},el={};
+  ['text','color','align','font','fill','tail_side'].forEach(k=>{const v=g(k);if(v!==undefined)el[k]=v;});
+  ['size','font_size'].forEach(k=>{const v=g(k);if(v!==undefined&&v!=='')el[k]=parseFloat(v);});
+  if(Object.keys(el).length)patch.element=el;
+  const s=g('start'),d=g('dur'),x=g('x'),y=g('y');
+  if(s!==undefined&&s!=='')patch.start=parseFloat(s);
+  if(d!==undefined&&d!=='')patch.duration=parseFloat(d);
+  if(x!==undefined&&x!==''&&y!==undefined&&y!=='')patch.transform={position:[parseFloat(x),parseFloat(y)]};
   await api('PATCH',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`,{patch});
-  await loadProject();toast('클립 수정됨');
+  await loadProject();selectClip(SEL.track,SEL.index);toast('클립 수정됨');
 }
 async function delClip(){
   await api('DELETE',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`);SEL=null;
@@ -534,18 +609,30 @@ function startDrag(e){
 function onDrag(e){
   if(!DRAG)return;const f=$('#frame');if(!f)return;
   const r=f.getBoundingClientRect(),s=$('#stage').getBoundingClientRect();
-  let x=Math.round((e.clientX-r.left)/r.width*(SPEC.width||1280));
-  let y=Math.round((e.clientY-r.top)/r.height*(SPEC.height||720));
-  x=Math.max(0,Math.min(SPEC.width||1280,x));y=Math.max(0,Math.min(SPEC.height||720,y));
+  const W=SPEC.width||1280,H=SPEC.height||720;
+  let x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
+  let snapX=null,snapY=null;
+  [W/2,0,W].forEach(t=>{if(Math.abs(x-t)<W*0.022){x=t;snapX=t;}});
+  [H/2,0,H].forEach(t=>{if(Math.abs(y-t)<H*0.022){y=t;snapY=t;}});
+  x=Math.max(0,Math.min(W,Math.round(x)));y=Math.max(0,Math.min(H,Math.round(y)));
   DRAG.x=x;DRAG.y=y;
   const h=$('#handle');
-  if(h){h.style.left=((r.left-s.left)+x/(SPEC.width||1280)*r.width)+'px';
-        h.style.top=((r.top-s.top)+y/(SPEC.height||720)*r.height)+'px';}
-  const X=$('#eX'),Y=$('#eY');if(X)X.value=x;if(Y)Y.value=y;
+  if(h){h.style.left=((r.left-s.left)+x/W*r.width)+'px';h.style.top=((r.top-s.top)+y/H*r.height)+'px';}
+  drawGuides(snapX,snapY,r,s,W,H);
+  const X=$('#e_x'),Y=$('#e_y');if(X)X.value=x;if(Y)Y.value=y;
   $('#badge').textContent=`위치 ${x}, ${y}`;
 }
+function drawGuides(sx,sy,r,s,W,H){
+  const ovl=$('#ovl');if(!ovl)return;
+  let g=ovl.querySelector('.guides');if(!g){g=document.createElement('div');g.className='guides';ovl.appendChild(g);}
+  let html='';
+  if(sx!=null)html+=`<div class="guide v" style="left:${(r.left-s.left)+sx/W*r.width}px;top:${r.top-s.top}px;height:${r.height}px"></div>`;
+  if(sy!=null)html+=`<div class="guide h" style="top:${(r.top-s.top)+sy/H*r.height}px;left:${r.left-s.left}px;width:${r.width}px"></div>`;
+  g.innerHTML=html;
+}
+function clearGuides(){const ovl=$('#ovl'),g=ovl&&ovl.querySelector('.guides');if(g)g.innerHTML='';}
 async function endDrag(){
-  window.removeEventListener('mousemove',onDrag);window.removeEventListener('mouseup',endDrag);
+  window.removeEventListener('mousemove',onDrag);window.removeEventListener('mouseup',endDrag);clearGuides();
   if(!DRAG||DRAG.x==null){DRAG=null;return;}
   const x=DRAG.x,y=DRAG.y;DRAG=null;
   try{await api('PATCH',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`,{patch:{transform:{position:[x,y]}}});
