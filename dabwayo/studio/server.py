@@ -21,6 +21,7 @@ from urllib.parse import parse_qs, urlparse
 from .. import capabilities as engine_capabilities
 from .. import mcp_server as M
 from ..service import OUTPUT_DIR, STORE
+from . import guide
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -60,6 +61,22 @@ def route(method, pattern):
 @route("GET", r"/api/capabilities")
 def _caps(h, m, body):
     return 200, engine_capabilities(), None
+
+
+# -- Operator dashboard: actions, activity timeline, prompt cookbook --------
+@route("GET", r"/api/dashboard")
+def _dashboard(h, m, body):
+    return 200, guide.dashboard_data(), None
+
+
+@route("GET", r"/api/activity")
+def _activity_get(h, m, body):
+    return 200, {"activity": guide.read_activity()}, None
+
+
+@route("POST", r"/api/activity")
+def _activity_post(h, m, body):
+    return 200, guide.append_activity(body), None
 
 
 @route("GET", r"/api/projects")
@@ -231,6 +248,9 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path in ("/", "/index.html"):
             with open(os.path.join(HERE, "index.html"), "rb") as f:
+                return self._send(200, f.read(), "text/html; charset=utf-8")
+        if path in ("/dashboard", "/dashboard.html"):
+            with open(os.path.join(HERE, "dashboard.html"), "rb") as f:
                 return self._send(200, f.read(), "text/html; charset=utf-8")
         if path.startswith("/files/"):
             name = os.path.basename(path[len("/files/"):])
