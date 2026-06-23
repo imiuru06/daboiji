@@ -5,6 +5,13 @@ function showTab(g,n){
   document.querySelectorAll(`.tabpane[data-group="${g}"]`).forEach(p=>p.classList.toggle('on',p.dataset.name===n));
   document.querySelectorAll(`.tabbtn[data-group="${g}"]`).forEach(b=>b.classList.toggle('on',b.dataset.name===n));
 }
+// mobile: switch which panel fills the screen (preview stays pinned on top)
+function setMView(v){
+  const app=document.querySelector('.app');if(app)app.dataset.mview=v;
+  document.querySelectorAll('#mnav button').forEach(b=>b.classList.toggle('on',b.dataset.mv===v));
+  if(v==='timeline')setTimeout(updatePlayhead,60);
+}
+const isMobile=()=>matchMedia('(max-width:860px)').matches;
 async function api(method,path,body){
   const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},
     body:body?JSON.stringify(body):undefined});
@@ -123,9 +130,9 @@ let TLD=null;
 function wireTimeline(){
   document.querySelectorAll('.tl-clip').forEach(el=>{
     const track=el.dataset.track,index=+el.dataset.index;
-    el.querySelector('.tl-grip.l').addEventListener('mousedown',e=>startClipDrag(e,el,'l'));
-    el.querySelector('.tl-grip.r').addEventListener('mousedown',e=>startClipDrag(e,el,'r'));
-    el.addEventListener('mousedown',e=>{if(e.target.classList.contains('tl-grip'))return;startClipDrag(e,el,'move');});
+    el.querySelector('.tl-grip.l').addEventListener('pointerdown',e=>startClipDrag(e,el,'l'));
+    el.querySelector('.tl-grip.r').addEventListener('pointerdown',e=>startClipDrag(e,el,'r'));
+    el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('tl-grip'))return;startClipDrag(e,el,'move');});
     el.addEventListener('contextmenu',e=>showCtx(e,track,index));
   });
   document.querySelectorAll('.tl-del').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();deleteTrack(b.dataset.track);}));
@@ -163,7 +170,7 @@ function startClipDrag(e,el,mode){
   TLD={el,mode,track,index,lanePx:lr.width,dur,startX:e.clientX,
        origStart:+el.dataset.start,origDur:+el.dataset.dur,moved:false,
        edges:collectEdges(track,index),srcTrack:track,curTrack:track};
-  window.addEventListener('mousemove',onClipDrag);window.addEventListener('mouseup',endClipDrag);
+  window.addEventListener('pointermove',onClipDrag);window.addEventListener('pointerup',endClipDrag);
 }
 function trackKind(name){const t=SPEC&&SPEC.tracks.find(x=>x.name===name);return t?(t.kind||'video'):'video';}
 function onClipDrag(e){
@@ -191,10 +198,10 @@ function onClipDrag(e){
   const b=$('#badge');if(b)b.textContent=(cross?`→ ${TLD.curTrack} · `:'')+`${TLD.curStart.toFixed(2)}s · 길이 ${TLD.curDur.toFixed(2)}s`;
 }
 async function endClipDrag(){
-  window.removeEventListener('mousemove',onClipDrag);window.removeEventListener('mouseup',endClipDrag);
+  window.removeEventListener('pointermove',onClipDrag);window.removeEventListener('pointerup',endClipDrag);
   document.querySelectorAll('.tl-lane.drophover').forEach(l=>l.classList.remove('drophover'));
   const d=TLD;TLD=null;if(!d)return;
-  if(!d.moved){selectClip(d.track,d.index);return;}
+  if(!d.moved){selectClip(d.track,d.index);if(isMobile())setMView('inspect');return;}
   // moved to a different track? relocate the clip object via spec PUT (undo-able)
   if(d.mode==='move'&&d.curTrack&&d.curTrack!==d.srcTrack){
     const src=trackOf(d.srcTrack),tgt=trackOf(d.curTrack);
@@ -292,7 +299,11 @@ function showInspector(){
     ${['solid','gradient'].includes(type)?'':'<p class="hint" style="margin:8px 0 0">💡 미리보기에서 <b>◯ 핸들</b> 드래그 · 타임라인에서 <b>클립/가장자리 드래그</b>로 위치·길이 조절</p>'}
     <div class="row" style="margin-top:12px">
       <button class="btn primary" style="flex:2" onclick="applyClip()">적용</button>
-      <button class="btn danger" onclick="delClip()">삭제</button></div>`;
+      <button class="btn danger" onclick="delClip()">삭제</button></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn sm ghost" onclick="ctxDuplicate(SEL.track,SEL.index)">복제</button>
+      <button class="btn sm ghost" onclick="ctxMove(SEL.track,SEL.index,1)">▲ 앞</button>
+      <button class="btn sm ghost" onclick="ctxMove(SEL.track,SEL.index,-1)">▼ 뒤</button></div>`;
   showTab('insp','props');drawHandle();
 }
 async function applyClip(){
@@ -399,14 +410,14 @@ function drawHandle(){
   const hy=(r.top-s.top)+y/(SPEC.height||720)*r.height;
   const txt=(clip.element||{}).text;
   ovl.innerHTML=`<div class="handle" id="handle" style="left:${hx}px;top:${hy}px" title="드래그해서 위치 이동">✛${txt?`<span class="lbl">${String(txt).replace(/</g,'&lt;').slice(0,12)}</span>`:''}</div>`;
-  $('#handle').onmousedown=startDrag;
+  $('#handle').onpointerdown=startDrag;
 }
 function hideHandle(){const o=$('#ovl');if(o)o.innerHTML='';}
 function startDrag(e){
   e.preventDefault();if(!selectedClip())return;
   DRAG={x:null,y:null};
-  window.addEventListener('mousemove',onDrag);
-  window.addEventListener('mouseup',endDrag);
+  window.addEventListener('pointermove',onDrag);
+  window.addEventListener('pointerup',endDrag);
 }
 function onDrag(e){
   if(!DRAG)return;const f=$('#frame');if(!f)return;
@@ -434,7 +445,7 @@ function drawGuides(sx,sy,r,s,W,H){
 }
 function clearGuides(){const ovl=$('#ovl'),g=ovl&&ovl.querySelector('.guides');if(g)g.innerHTML='';}
 async function endDrag(){
-  window.removeEventListener('mousemove',onDrag);window.removeEventListener('mouseup',endDrag);clearGuides();
+  window.removeEventListener('pointermove',onDrag);window.removeEventListener('pointerup',endDrag);clearGuides();
   if(!DRAG||DRAG.x==null){DRAG=null;return;}
   const x=DRAG.x,y=DRAG.y;DRAG=null;
   try{await api('PATCH',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`,{patch:{transform:{position:[x,y]}}});

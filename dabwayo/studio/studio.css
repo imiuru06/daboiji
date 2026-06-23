@@ -165,3 +165,39 @@
          border:1px solid var(--line2);padding:9px 16px;border-radius:9px;opacity:0;transition:.2s;
          pointer-events:none;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   .toast.show{opacity:1}
+
+/* ===== draggable elements: touch-action none so touch-drag doesn't scroll ===== */
+.tl-clip,.tl-grip,.handle{touch-action:none}
+
+/* ===== mobile bottom navigation (hidden on desktop) ===== */
+.mobilenav{display:none;position:fixed;bottom:0;left:0;right:0;height:58px;z-index:60;
+  background:var(--panel);border-top:1px solid var(--line2)}
+.mobilenav button{flex:1;background:transparent;border:0;color:var(--mut);font:inherit;
+  font-weight:600;font-size:11px;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px}
+.mobilenav button .ic{font-size:18px;line-height:1}
+.mobilenav button.on{color:var(--acc)}
+
+/* ===== responsive: tablet / phone ===== */
+@media (max-width:860px){
+  body{overflow:auto}
+  header{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}
+  header .sp{display:none} .store{display:none}
+  .hgroup.proj{order:5;min-width:100%}
+  .app{display:flex;flex-direction:column;height:auto;
+       min-height:calc(100vh - 60px);padding-bottom:62px}
+  .stage-wrap{order:-1;height:40vh;min-height:210px;border-bottom:1px solid var(--line)}
+  .panel.tools,.timeline,.panel.inspector{display:none;flex:1 0 auto;min-height:48vh;
+       border:0;border-top:1px solid var(--line)}
+  .app[data-mview="tools"] .panel.tools{display:flex}
+  .app[data-mview="timeline"] .timeline{display:flex}
+  .app[data-mview="inspect"] .panel.inspector{display:flex}
+  .mobilenav{display:flex}
+  .btn{min-height:38px} .tabbtn{min-height:42px}
+  .tl-del{opacity:.7} .tl-lane{min-height:36px}
+  input,select,textarea{font-size:16px}   /* prevent iOS focus zoom */
+}
+@media (max-width:480px){
+  .stage-wrap{height:36vh;min-height:180px}
+  .hgroup.proj .btn.sm{padding:6px 8px}
+}

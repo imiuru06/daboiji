@@ -23,7 +23,7 @@
   <button class="btn brand" id="renderBtn" onclick="doRender()">▶ 렌더</button>
 </header>
 
-<div class="app">
+<div class="app" data-mview="tools">
   <!-- ===== LEFT: tools ===== -->
   <div class="panel tools">
     <div class="tabbar">
@@ -163,6 +163,11 @@
 
 <div class="toast" id="toast"></div>
 <div class="ctxmenu" id="ctxmenu"></div>
+<nav class="mobilenav" id="mnav">
+  <button data-mv="tools" class="on" onclick="setMView('tools')"><span class="ic">＋</span>도구</button>
+  <button data-mv="timeline" onclick="setMView('timeline')"><span class="ic">▭</span>타임라인</button>
+  <button data-mv="inspect" onclick="setMView('inspect')"><span class="ic">⚙</span>속성</button>
+</nav>
 
 <script src="/studio.js"></script>
 </body>
