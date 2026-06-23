@@ -19,6 +19,10 @@ output/
 .vf_store_test/
 .vf_output_test/
 
+# Studio runtime output + publish ledger (scripts/publish_clips.py)
+.vf_output/
+.published.json
+
 # Generated assets (reproducible via examples/generate_assets.py)
 assets/generated/
 
