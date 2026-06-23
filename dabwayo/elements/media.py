@@ -35,12 +35,27 @@ def _fit(img: np.ndarray, target_w: int, target_h: int, mode: FitMode) -> np.nda
     return canvas
 
 
+def _crop(img: np.ndarray, crop) -> np.ndarray:
+    """Crop to ``crop`` = [x, y, w, h] given as fractions (0..1) of the source
+    frame. Returns ``img`` unchanged when ``crop`` is falsy."""
+    if not crop:
+        return img
+    h, w = img.shape[:2]
+    cx, cy, cw, ch = crop
+    x0 = max(0, min(w - 1, int(round(cx * w))))
+    y0 = max(0, min(h - 1, int(round(cy * h))))
+    x1 = max(x0 + 1, min(w, int(round((cx + cw) * w))))
+    y1 = max(y0 + 1, min(h, int(round((cy + ch) * h))))
+    return img[y0:y1, x0:x1]
+
+
 @register("image")
 class ImageElement(Element):
-    def __init__(self, path, fit="contain", size=None):
+    def __init__(self, path, fit="contain", size=None, crop=None):
         self.path = path
         self.fit = FitMode(fit)
         self.size = size
+        self.crop = crop
         self._cache = None
 
     def _load(self):
@@ -58,27 +73,30 @@ class ImageElement(Element):
         return (img.shape[1], img.shape[0])
 
     def render(self, ctx: RenderContext, t: float) -> np.ndarray:
-        img = self._load()
+        img = _crop(self._load(), self.crop)
         if self.size:
             return _fit(img, self.size[0], self.size[1], self.fit)
         return img
 
     @classmethod
     def from_spec(cls, spec):
-        return cls(path=spec["path"], fit=spec.get("fit", "contain"), size=spec.get("size"))
+        return cls(path=spec["path"], fit=spec.get("fit", "contain"),
+                   size=spec.get("size"), crop=spec.get("crop"))
 
 
 @register("video")
 class VideoElement(Element):
     """A clip sourced from an existing video file (decoded via imageio)."""
 
-    def __init__(self, path, fit="cover", size=None, speed=1.0, loop=False, start=0.0):
+    def __init__(self, path, fit="cover", size=None, speed=1.0, loop=False,
+                 start=0.0, crop=None):
         self.path = path
         self.fit = FitMode(fit)
         self.size = size
         self.speed = float(speed)
         self.loop = loop
         self.start = float(start)
+        self.crop = crop
         self._reader = None
         self._meta = None
 
@@ -112,6 +130,7 @@ class VideoElement(Element):
         arr = np.asarray(frame, np.float32) / 255.0
         if arr.shape[2] == 3:
             arr = np.dstack([arr, np.ones(arr.shape[:2], np.float32)])
+        arr = _crop(arr, self.crop)
         w, h = self.size or ctx.size
         return _fit(arr, w, h, self.fit)
 
@@ -121,4 +140,5 @@ class VideoElement(Element):
             path=spec["path"], fit=spec.get("fit", "cover"),
             size=spec.get("size"), speed=spec.get("speed", 1.0),
             loop=spec.get("loop", False), start=spec.get("start", 0.0),
+            crop=spec.get("crop"),
         )

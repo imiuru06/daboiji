@@ -604,6 +604,17 @@ function showInspector(){
         <div><label>꼬리</label><select id="e_tail_side">${opt(['bottom','top','left','right'],el.tail_side)}</select></div></div>
       <div class="row"><div><label>배경</label><input id="e_fill" value="${el.fill||'#ffffff'}"></div>
         <div><label>글자색</label><input id="e_color" value="${el.color||'#0b0e16'}"></div></div>`;
+  }else if(type==='video'||type==='image'){
+    const cr=el.crop||['','','',''];
+    extra=(type==='video'?`
+      <div class="row"><div><label>속도 (0.5=슬로모, 2=배속)</label><input id="e_speed" type="number" step="0.1" value="${el.speed??1}"></div>
+        <div><label>소스 시작(s)</label><input id="e_source_start" type="number" step="0.1" value="${el.start??0}"></div></div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:8px"><input type="checkbox" id="e_loop" ${el.loop?'checked':''} style="width:auto"> 루프(소스 반복)</label>`:'')
+      +`<label>크롭 (비율 0~1: x · y · 너비 · 높이)</label>
+      <div class="row"><input id="e_crop_x" type="number" step="0.01" placeholder="x" value="${cr[0]}">
+        <input id="e_crop_y" type="number" step="0.01" placeholder="y" value="${cr[1]}">
+        <input id="e_crop_w" type="number" step="0.01" placeholder="w" value="${cr[2]}">
+        <input id="e_crop_h" type="number" step="0.01" placeholder="h" value="${cr[3]}"></div>`;
   }
   $('#inspectorBody').innerHTML=`
     <div class="clip-meta">${SEL.track} · #${SEL.index} · ${type||''}</div>
@@ -623,7 +634,12 @@ async function applyClip(){
   const g=k=>{const n=$('#e_'+k);return n?n.value:undefined;};
   const patch={},el={};
   ['text','color','align','font','fill','tail_side'].forEach(k=>{const v=g(k);if(v!==undefined)el[k]=v;});
-  ['size','font_size'].forEach(k=>{const v=g(k);if(v!==undefined&&v!=='')el[k]=parseFloat(v);});
+  ['size','font_size','speed'].forEach(k=>{const v=g(k);if(v!==undefined&&v!=='')el[k]=parseFloat(v);});
+  const ss=g('source_start');if(ss!==undefined&&ss!=='')el.start=parseFloat(ss);
+  const lp=$('#e_loop');if(lp)el.loop=lp.checked;
+  const cx=g('crop_x');
+  if(cx!==undefined){const v=[cx,g('crop_y'),g('crop_w'),g('crop_h')];
+    el.crop=v.every(x=>x!==''&&x!==undefined)?v.map(parseFloat):null;}
   if(Object.keys(el).length)patch.element=el;
   const s=g('start'),d=g('dur'),x=g('x'),y=g('y');
   if(s!==undefined&&s!=='')patch.start=parseFloat(s);

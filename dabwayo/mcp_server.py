@@ -209,12 +209,29 @@ def add_media(project_id: str, path: str, kind: str = "image", start: float = 0.
               track: Optional[str] = None, transform: Optional[dict] = None,
               effects: Optional[List[dict]] = None,
               transition_in: Optional[dict] = None,
-              transition_out: Optional[dict] = None) -> dict:
+              transition_out: Optional[dict] = None,
+              speed: float = 1.0, loop: bool = False, source_start: float = 0.0,
+              crop: Optional[List[float]] = None) -> dict:
     """Add an image or video file clip. kind='image' or 'video'. fit controls
-    scaling to ``size`` (or canvas): contain|cover|stretch|none."""
+    scaling to ``size`` (or canvas): contain|cover|stretch|none.
+
+    Video editing controls (video clips): ``speed`` retimes playback
+    (0.5 = half-speed/slow-mo, 2 = double-speed); ``loop`` repeats the source
+    if the clip outlasts it; ``source_start`` trims in from this many seconds
+    into the source. ``crop`` = [x, y, w, h] as fractions (0..1) of the source
+    frame, applied before fit (works for image and video)."""
     element: Dict[str, Any] = {"type": kind, "path": path, "fit": fit}
     if size:
         element["size"] = size
+    if crop:
+        element["crop"] = crop
+    if kind == "video":
+        if speed != 1.0:
+            element["speed"] = speed
+        if loop:
+            element["loop"] = True
+        if source_start:
+            element["start"] = source_start
     return add_clip(project_id, element, start, duration, track, transform,
                     effects, "normal", transition_in, transition_out)
 
