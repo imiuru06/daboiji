@@ -24,6 +24,7 @@
   code{font-family:ui-monospace,monospace;font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:#cfe6ff}
   button{background:#15203a;color:var(--acc);border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer;font:inherit}
   img.prev{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:8px;display:none}
+  .media{width:100%;border-radius:8px;border:1px solid var(--line);margin-bottom:8px;background:#000;display:block}
   .muted{color:var(--mut)}
 </style>
 </head>
@@ -57,10 +58,17 @@ async function load(){
 
   const byId=Object.fromEntries(idx.assets.map(a=>[a.id,a]));
   const chain=a=>{const o=[];let x=a,s=new Set();while(x&&!s.has(x.id)){s.add(x.id);o.unshift(x.id);x=byId[x.parent];}return o;};
+  const media=a=>{
+    if(!a.file) return '';
+    if(a.kind==='video') return `<video class="media" src="${esc(a.file)}" controls preload="metadata" playsinline></video>`;
+    if(a.kind==='image') return `<img class="media" src="${esc(a.file)}" loading="lazy"/>`;
+    return '';
+  };
   document.getElementById('assets').innerHTML = idx.assets.length ? idx.assets.map(a=>`
     <div class="card">
+      ${media(a)}
       <h3>${esc(a.id)}</h3>
-      <div><span class="tag ok">${esc(a.role)}</span><span class="tag">${esc(a.kind)}</span></div>
+      <div><span class="tag ok">${esc(a.role)}</span><span class="tag">${esc(a.kind)}</span>${a.file?`<a class="tag" href="${esc(a.file)}" target="_blank">열기 ↗</a>`:''}</div>
       <div class="meta" style="margin-top:6px">provider: ${esc(a.provider||'—')}${a.duration?' · '+esc(a.duration)+'s':''}</div>
       <div class="meta">계보: <code>${chain(a).join(' ▶ ')}</code></div>
       <div class="meta">${esc(a.created||'')}</div>

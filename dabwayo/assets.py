@@ -186,6 +186,8 @@ def build_index() -> dict:
         "parent": (a.get("source") or {}).get("parent"),
         "provider": (a.get("source") or {}).get("provider"),
         "projects": a.get("projects", []), "created": a.get("created"),
+        # served URL so the gallery can play/show the media directly
+        "file": ("/files/" + os.path.basename(a["path"])) if a.get("path") else None,
     } for a in list_assets()]
     return {
         "updated": time.strftime("%Y-%m-%d %H:%M:%S"),
