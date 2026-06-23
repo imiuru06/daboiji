@@ -79,6 +79,26 @@ def _activity_post(h, m, body):
     return 200, guide.append_activity(body), None
 
 
+# -- Asset registry / store manifest (see STORE.md) -------------------------
+@route("GET", r"/api/index")
+def _store_index(h, m, body):
+    from .. import assets
+    return 200, assets.build_index(), None
+
+
+@route("GET", r"/api/assets")
+def _assets_list(h, m, body):
+    from .. import assets
+    return 200, {"assets": assets.list_assets()}, None
+
+
+@route("GET", r"/api/assets/(ast_[0-9a-f]+)")
+def _asset_get(h, m, body):
+    from .. import assets
+    rec = assets.get(m.group(1))
+    return 200, {**rec, "lineage": [a["id"] for a in assets.lineage(m.group(1))]}, None
+
+
 @route("GET", r"/api/projects")
 def _list(h, m, body):
     out = []

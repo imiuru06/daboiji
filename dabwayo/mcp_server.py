@@ -260,6 +260,16 @@ def generate_video(project_id: str, prompt: str, mode: str = "t2v",
     info = res.as_dict()
     info["ok"] = True
     info["generate_seconds"] = round(time.time() - t0, 2)
+    # register as an asset (provenance) + timeline log
+    from . import assets as _assets
+    ast = _assets.register(res.path, kind="video", role="raw",
+                           source={"action": "generate", "provider": res.provider,
+                                   "prompt": prompt, "params": {"mode": mode,
+                                   "duration": duration, "seed": seed, "steps": steps}},
+                           projects=[project_id] if add_to_timeline else [])
+    info["asset_id"] = ast["id"]
+    _log_activity_safe("generate", f"{res.provider} {mode} 생성",
+                       [f"prompt: {prompt[:60]}"], [ast["id"]])
     if add_to_timeline:
         clip = add_media(project_id, res.path, "video", start,
                          res.frames / float(res.fps), fit, None, track,
@@ -303,17 +313,83 @@ def remove_watermark(input_path: str, regions: List[List[int]],
     is the ROI padding, ``feather`` the blend softness, ``dilate`` grows the
     mask so edges are fully covered. Returns the cleaned ``out_path``."""
     from .dewatermark import remove_watermark as _dewm
+    from . import assets as _assets
     os.makedirs(_OUTPUT_DIR, exist_ok=True)
     out_path = out_path or os.path.join(_OUTPUT_DIR, f"clean_{uuid.uuid4().hex[:8]}.mp4")
     t0 = time.time()
     _dewm(input_path, out_path, regions, pad=pad, feather=feather, dilate=dilate)
-    return {"ok": True, "path": out_path,
+    parent = _assets.find_by_path(input_path)        # link provenance if known
+    ast = _assets.register(out_path, kind="video", role="dewatermarked",
+                           source={"action": "dewatermark", "provider": "lama",
+                                   "parent": parent["id"] if parent else None,
+                                   "params": {"regions": regions}})
+    _log_activity_safe("dewatermark", "워터마크 제거(LaMa)",
+                       [parent["id"] if parent else input_path], [ast["id"]])
+    return {"ok": True, "path": out_path, "asset_id": ast["id"],
+            "parent": parent["id"] if parent else None,
             "seconds": round(time.time() - t0, 2), "regions": regions}
+
+
+# --------------------------------------------------------------------------
+# Asset registry (JSON management: media + provenance) — see STORE.md
+# --------------------------------------------------------------------------
+@mcp.tool()
+def register_asset(path: str, kind: str = "video", role: str = "other",
+                   action: str = "upload", provider: str = "",
+                   prompt: str = "", parent: Optional[str] = None,
+                   tags: Optional[List[str]] = None) -> dict:
+    """Register a media file as a tracked asset with provenance.
+
+    Stores a record under <STORE>/assets/<id>.json (see STORE.md). ``role``:
+    raw|dewatermarked|edited|broll|final|upload|other. ``parent`` links to the
+    asset this was derived from — that link forms the provenance graph that
+    connects multiple media (raw -> dewatermarked -> edited -> final)."""
+    from . import assets as _assets
+    src = {"action": action, "provider": provider, "prompt": prompt}
+    if parent:
+        src["parent"] = parent
+    return _assets.register(path, kind=kind, role=role, source=src, tags=tags)
+
+
+@mcp.tool()
+def list_assets() -> dict:
+    """List all registered assets (id, kind, role, media, source, projects)."""
+    from . import assets as _assets
+    return {"assets": _assets.list_assets()}
+
+
+@mcp.tool()
+def get_asset(asset_id: str, with_lineage: bool = True) -> dict:
+    """Get one asset record; with_lineage walks source.parent back to the root
+    so you can see how the media was built up from other media."""
+    from . import assets as _assets
+    rec = _assets.get(asset_id)
+    if with_lineage:
+        rec = {**rec, "lineage": [a["id"] for a in _assets.lineage(asset_id)]}
+    return rec
+
+
+@mcp.tool()
+def store_index() -> dict:
+    """Whole-store manifest: project + asset summaries with counts (see STORE.md)."""
+    from . import assets as _assets
+    return _assets.build_index()
 
 
 # --------------------------------------------------------------------------
 # Operator dashboard (Studio): activity log + consolidated status
 # --------------------------------------------------------------------------
+def _log_activity_safe(action, summary, inputs=None, outputs=None, notes=""):
+    """Append to the activity log without ever breaking the caller."""
+    try:
+        from .studio.guide import append_activity
+        append_activity({"action": action, "summary": summary,
+                         "inputs": inputs or [], "outputs": outputs or [],
+                         "notes": notes})
+    except Exception:  # noqa: BLE001
+        pass
+
+
 @mcp.tool()
 def log_activity(action: str, summary: str, inputs: Optional[List[str]] = None,
                  outputs: Optional[List[str]] = None, notes: str = "") -> dict:

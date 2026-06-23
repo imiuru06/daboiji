@@ -64,7 +64,10 @@
   <h2>③ 프롬프트 가이드 — 여러 미디어를 연결하는 클립</h2>
   <div id="prompts"></div>
 
-  <h2>④ 엔진 프리미티브 <span class="muted">(요소·효과·전환)</span></h2>
+  <h2>④ 에셋 & 계보 <span class="muted">(미디어 + 출처 그래프)</span></h2>
+  <div id="assets"></div>
+
+  <h2>⑤ 엔진 프리미티브 <span class="muted">(요소·효과·전환)</span></h2>
   <div class="card" id="caps"></div>
 
 </div>
@@ -112,7 +115,27 @@ async function load(){
       ${p.tips?`<ul>${p.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}
     </details>`).join('');
 
-  // 4. capabilities
+  // 4. assets & lineage (from the store manifest)
+  try{
+    const idx = await (await fetch('/api/index')).json();
+    const byId = Object.fromEntries(idx.assets.map(a=>[a.id,a]));
+    const chain = a => { const out=[]; let x=a; const seen=new Set();
+      while(x && !seen.has(x.id)){ seen.add(x.id); out.unshift(x.id); x=byId[x.parent]; } return out; };
+    document.getElementById('assets').innerHTML =
+      `<div class="muted" style="margin-bottom:8px">프로젝트 ${idx.counts.projects} · 에셋 ${idx.counts.assets}</div>` +
+      (idx.assets.length ? idx.assets.map(a=>`
+        <div class="card" style="margin-bottom:8px">
+          <h3>${esc(a.id)} <span class="tag">${esc(a.role)}</span>
+              <span class="tag low">${esc(a.kind)}</span></h3>
+          <div class="meta">provider: ${esc(a.provider||'—')} · ${a.duration?esc(a.duration)+'s':''}
+               · ${esc(a.created||'')}</div>
+          <div style="margin-top:6px">계보: <code>${chain(a).join(' ▶ ')}</code></div>
+          ${a.projects&&a.projects.length?`<div class="meta">사용: ${a.projects.map(esc).join(', ')}</div>`:''}
+        </div>`).join('')
+      : `<div class="muted">아직 등록된 에셋이 없습니다. generate_video / remove_watermark 가 자동 등록합니다.</div>`);
+  }catch(e){ document.getElementById('assets').innerHTML = '<div class="muted">index 불러오기 실패</div>'; }
+
+  // 5. capabilities
   const c = d.capabilities;
   const row = (k,v)=>`<div style="margin:4px 0"><span class="muted">${k}:</span> ${(v||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div>`;
   document.getElementById('caps').innerHTML =
