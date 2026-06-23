@@ -26,5 +26,8 @@ output/
 # Generated assets (reproducible via examples/generate_assets.py)
 assets/generated/
 
+# Frame handoff scratch (intermediate frames extracted from uploaded clips)
+samples/handoff/
+
 # OS
 .DS_Store
