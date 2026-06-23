@@ -128,6 +128,16 @@
   .tl-grip:hover{background:rgba(255,255,255,.4)}
   .guide{position:absolute;background:var(--warn);box-shadow:0 0 6px var(--warn);pointer-events:none;z-index:5}
   .guide.v{width:1px}.guide.h{height:1px}
+  .tl-rulerrow{height:20px}
+  .tl-ruler{position:relative;height:18px;border-bottom:1px dashed var(--line)}
+  .tl-ruler .tick{position:absolute;top:0;font-size:10px;color:var(--mut2);transform:translateX(-1px);
+                  border-left:1px solid var(--line);padding-left:3px;height:14px}
+  .ctxmenu{position:fixed;display:none;z-index:100;background:var(--elev);border:1px solid var(--line2);
+           border-radius:9px;padding:5px;min-width:150px;box-shadow:0 12px 36px rgba(0,0,0,.55)}
+  .ctxitem{padding:8px 11px;border-radius:6px;font-size:13px;cursor:pointer}
+  .ctxitem:hover{background:#1d2640}
+  .ctxitem.dz{color:var(--danger)}
+  .ctxsep{height:1px;background:var(--line);margin:4px 6px}
   .tl-empty{color:var(--mut2);font-size:12px;padding:22px 14px;text-align:center}
   .tl-playhead{position:absolute;top:0;width:2px;background:var(--brand);box-shadow:0 0 8px var(--brand);
                pointer-events:none;display:none;z-index:3}
@@ -311,6 +321,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="ctxmenu" id="ctxmenu"></div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -394,7 +405,7 @@ function clipColor(t){return {video:'#2f6fe0',image:'#2f9fe0',text:'#3bbf8e',cal
 function renderTimeline(tracks){
   const dur=parseFloat($('#time').max)||10;const host=$('#timelineTracks');
   if(!tracks||!tracks.length){host.innerHTML='<div class="tl-empty">클립이 없습니다 — 왼쪽 도구에서 배경·텍스트·미디어를 추가하세요</div>';updatePlayhead();return;}
-  host.innerHTML=tracks.map(tr=>`
+  host.innerHTML=rulerHTML(dur)+tracks.map(tr=>`
     <div class="tl-row">
       <div class="tl-label" title="${tr.track}">${tr.track}</div>
       <div class="tl-lane">${tr.clips.map(c=>{
@@ -411,6 +422,12 @@ function renderTimeline(tracks){
     </div>`).join('');
   wireTimeline();updatePlayhead();
 }
+function rulerHTML(dur){
+  const step=dur<=6?1:dur<=15?2:dur<=40?5:10;let m='';
+  for(let t=0;t<=dur+1e-6;t+=step){const left=Math.min(99.5,t/dur*100);
+    m+=`<span class="tick" style="left:${left}%">${+t.toFixed(2)}s</span>`;}
+  return `<div class="tl-row tl-rulerrow"><div class="tl-label"></div><div class="tl-ruler" id="tlRuler">${m}</div></div>`;
+}
 function renderTimelineFromSpec(){
   if(!SPEC)return;
   renderTimeline(SPEC.tracks.map(t=>({track:t.name,clips:t.clips.map((c,i)=>(
@@ -420,9 +437,11 @@ function renderTimelineFromSpec(){
 let TLD=null;
 function wireTimeline(){
   document.querySelectorAll('.tl-clip').forEach(el=>{
+    const track=el.dataset.track,index=+el.dataset.index;
     el.querySelector('.tl-grip.l').addEventListener('mousedown',e=>startClipDrag(e,el,'l'));
     el.querySelector('.tl-grip.r').addEventListener('mousedown',e=>startClipDrag(e,el,'r'));
     el.addEventListener('mousedown',e=>{if(e.target.classList.contains('tl-grip'))return;startClipDrag(e,el,'move');});
+    el.addEventListener('contextmenu',e=>showCtx(e,track,index));
   });
 }
 function collectEdges(track,skip){
@@ -438,8 +457,15 @@ function startClipDrag(e,el,mode){
   SEL={track,index};showInspector();
   document.querySelectorAll('.tl-clip').forEach(c=>c.classList.toggle('sel',c===el));
   const lr=el.parentElement.getBoundingClientRect();
-  TLD={el,mode,track,index,lanePx:lr.width,dur:parseFloat($('#time').max)||10,startX:e.clientX,
-       origStart:+el.dataset.start,origDur:+el.dataset.dur,moved:false,edges:collectEdges(track,index)};
+  const dur=parseFloat($('#time').max)||10;
+  const oStart=+el.dataset.start,oEnd=oStart+(+el.dataset.dur);
+  // overlap bounds: don't cross neighbouring clips in the same track
+  let lb=0,rb=dur;
+  const tr=SPEC.tracks.find(t=>t.name===track);
+  if(tr)tr.clips.forEach((c,i)=>{if(i===index)return;const s=c.start||0,en=s+(c.duration||0);
+    if(en<=oStart+1e-6)lb=Math.max(lb,en);if(s>=oEnd-1e-6)rb=Math.min(rb,s);});
+  TLD={el,mode,track,index,lanePx:lr.width,dur,startX:e.clientX,
+       origStart:oStart,origDur:+el.dataset.dur,moved:false,edges:collectEdges(track,index),lb,rb};
   window.addEventListener('mousemove',onClipDrag);window.addEventListener('mouseup',endClipDrag);
 }
 function onClipDrag(e){
@@ -447,9 +473,9 @@ function onClipDrag(e){
   const sPerPx=TLD.dur/TLD.lanePx,thr=8*sPerPx,min=0.1;
   const delta=(e.clientX-TLD.startX)*sPerPx;
   let start=TLD.origStart,d=TLD.origDur;
-  if(TLD.mode==='move'){start=snapSec(TLD.origStart+delta,TLD.edges,thr);start=Math.max(0,Math.min(TLD.dur-d,start));}
-  else if(TLD.mode==='r'){let end=snapSec(TLD.origStart+TLD.origDur+delta,TLD.edges,thr);d=Math.max(min,Math.min(TLD.dur-TLD.origStart,end-TLD.origStart));}
-  else{let ns=snapSec(TLD.origStart+delta,TLD.edges,thr);ns=Math.max(0,Math.min(TLD.origStart+TLD.origDur-min,ns));d=TLD.origStart+TLD.origDur-ns;start=ns;}
+  if(TLD.mode==='move'){start=snapSec(TLD.origStart+delta,TLD.edges,thr);start=Math.max(TLD.lb,Math.min(TLD.rb-d,start));}
+  else if(TLD.mode==='r'){let end=snapSec(TLD.origStart+TLD.origDur+delta,TLD.edges,thr);end=Math.min(TLD.rb,end);d=Math.max(min,end-TLD.origStart);}
+  else{let ns=snapSec(TLD.origStart+delta,TLD.edges,thr);ns=Math.max(TLD.lb,Math.min(TLD.origStart+TLD.origDur-min,ns));d=TLD.origStart+TLD.origDur-ns;start=ns;}
   TLD.curStart=Math.round(start*100)/100;TLD.curDur=Math.round(d*100)/100;
   const left=Math.min(98,Math.max(0,TLD.curStart/TLD.dur*100));
   const w=Math.min(100-left,Math.max(1,TLD.curDur/TLD.dur*100));
@@ -464,6 +490,46 @@ async function endClipDrag(){
     await loadProject();selectClip(d.track,d.index);toast(`클립: ${d.curStart.toFixed(2)}s +${d.curDur.toFixed(2)}s`);
   }catch(err){toast('오류: '+err.message);}
 }
+// ---- clip context menu (right-click) — edits spec + PUT (undo-able) ----
+async function putSpec(){await api('PUT','/api/projects/'+PID,{spec:SPEC});await loadProject();}
+function trackOf(name){return SPEC.tracks.find(t=>t.name===name);}
+function showCtx(e,track,index){
+  e.preventDefault();const m=$('#ctxmenu');
+  const tr=trackOf(track),n=tr?tr.clips.length:0;
+  const item=(l,fn,cls='')=>`<div class="ctxitem ${cls}" onclick="hideCtx();${fn}">${l}</div>`;
+  m.innerHTML=item('복제',`ctxDuplicate('${track}',${index})`)
+    +(index<n-1?item('위로 (앞 레이어)',`ctxMove('${track}',${index},1)`):'')
+    +(index>0?item('아래로 (뒤 레이어)',`ctxMove('${track}',${index},-1)`):'')
+    +'<div class="ctxsep"></div>'+item('삭제',`ctxDelete('${track}',${index})`,'dz');
+  m.style.display='block';
+  const w=m.offsetWidth,h=m.offsetHeight;
+  m.style.left=Math.min(e.clientX,innerWidth-w-6)+'px';
+  m.style.top=Math.min(e.clientY,innerHeight-h-6)+'px';
+}
+function hideCtx(){const m=$('#ctxmenu');if(m)m.style.display='none';}
+async function ctxDuplicate(track,index){
+  const tr=trackOf(track);if(!tr)return;
+  tr.clips.splice(index+1,0,JSON.parse(JSON.stringify(tr.clips[index])));
+  SEL={track,index:index+1};await putSpec();selectClip(track,index+1);toast('클립 복제됨');
+}
+async function ctxDelete(track,index){
+  const tr=trackOf(track);if(!tr)return;tr.clips.splice(index,1);SEL=null;
+  await putSpec();$('#inspectorBody').innerHTML='<div class="empty-i">타임라인에서 클립을 선택하면<br>여기서 편집할 수 있습니다.</div>';
+  toast('클립 삭제됨');
+}
+async function ctxMove(track,index,dir){
+  const tr=trackOf(track);if(!tr)return;const j=index+dir;if(j<0||j>=tr.clips.length)return;
+  [tr.clips[index],tr.clips[j]]=[tr.clips[j],tr.clips[index]];
+  SEL={track,index:j};await putSpec();selectClip(track,j);toast(dir>0?'앞 레이어로':'뒤 레이어로');
+}
+document.addEventListener('click',hideCtx);
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='z'){
+    const t=(e.target.tagName||'');if(t==='INPUT'||t==='TEXTAREA')return;
+    e.preventDefault();undoEdit();
+  }
+  if(e.key==='Escape')hideCtx();
+});
 function selectClip(track,index){SEL={track,index};showInspector();renderTimelineFromSpec();}
 function showInspector(){
   const clip=selectedClip();if(!clip){return;}
