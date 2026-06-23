@@ -31,7 +31,11 @@ def _build_parser() -> argparse.ArgumentParser:
     g = sub.add_parser("generate", help="generate a video from a prompt")
     g.add_argument("prompt", help="text prompt")
     g.add_argument("-o", "--output", default="output.mp4", help="output file (default: output.mp4)")
-    g.add_argument("--duration", type=float, help="clip duration in seconds")
+    # Parameters understood by the DABWAYO modelscope-1.7b server.
+    g.add_argument("--num-frames", type=int, help="number of frames (server default 16)")
+    g.add_argument("--fps", type=int, help="frames per second (server default 12)")
+    g.add_argument("--steps", type=int, help="inference steps (server default 20)")
+    g.add_argument("--duration", type=float, help="clip duration in seconds (advisory)")
     g.add_argument("--seed", type=int, help="random seed")
     g.add_argument(
         "--param",
@@ -111,6 +115,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         if args.command == "generate":
             params = _parse_params(args.param)
+            if args.num_frames is not None:
+                params["num_frames"] = args.num_frames
+            if args.fps is not None:
+                params["fps"] = args.fps
+            if args.steps is not None:
+                params["steps"] = args.steps
             if args.duration is not None:
                 params["duration"] = args.duration
             if args.seed is not None:
