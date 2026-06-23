@@ -5,252 +5,389 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>다봐요 Studio</title>
 <style>
-  :root{--bg:#0a0d14;--panel:#121726;--panel2:#0e1320;--line:#222a3d;--ink:#e8eefc;
-        --mut:#8aa0c8;--acc:#5cc8ff;--acc2:#ea1834;--ok:#54e0b0;}
+  :root{
+    --bg:#080b11; --panel:#10151f; --panel2:#0d121b; --elev:#161d2b;
+    --line:#212a3c; --line2:#2c3750;
+    --ink:#e9eefb; --mut:#8a99b8; --mut2:#62708d;
+    --acc:#5cc8ff; --acc-ink:#04121f; --brand:#ea1834;
+    --ok:#54e0b0; --warn:#ffcf6b; --danger:#ff7a8a;
+    --r:10px; --r-sm:7px; --r-lg:14px;
+  }
   *{box-sizing:border-box}
-  body{margin:0;font:14px/1.45 -apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;
-       background:var(--bg);color:var(--ink)}
-  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);
-         background:linear-gradient(180deg,#121726,#0c1018)}
-  header h1{font-size:16px;margin:0;letter-spacing:.5px}
-  header .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
-  .live{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12px}
-  .wrap{display:grid;grid-template-columns:300px 1fr 320px;gap:0;height:calc(100vh - 49px)}
-  .col{padding:14px;overflow:auto}
-  .col.left{border-right:1px solid var(--line)}
-  .col.right{border-left:1px solid var(--line);background:var(--panel2)}
-  h2{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:18px 0 8px}
-  h2:first-child{margin-top:0}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
-  label{display:block;font-size:11px;color:var(--mut);margin:8px 0 3px}
+  html,body{height:100%}
+  body{margin:0;font:13.5px/1.45 -apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;
+       background:var(--bg);color:var(--ink);overflow:hidden}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#26314a;border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:#33405e}
+  a{color:var(--acc);text-decoration:none}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:14px;height:52px;padding:0 16px;
+         border-bottom:1px solid var(--line);background:linear-gradient(180deg,#141a28,#0c1018)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.3px}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);box-shadow:0 0 12px var(--brand)}
+  .brand b{color:var(--acc)}
+  .hgroup{display:flex;align-items:center;gap:8px}
+  .hgroup.proj{min-width:280px}
+  header .sp{flex:1}
+  .store{font-size:11px;color:var(--mut2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .live{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12px}
+
+  /* ---------- buttons / inputs ---------- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+       background:var(--elev);color:var(--ink);border:1px solid var(--line2);border-radius:var(--r-sm);
+       padding:7px 12px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;transition:.12s}
+  .btn:hover{border-color:#41507a;filter:brightness(1.12)}
+  .btn.sm{padding:5px 9px;font-size:12px}
+  .btn.icon{padding:6px 9px}
+  .btn.primary{background:var(--acc);color:var(--acc-ink);border-color:transparent}
+  .btn.brand{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.ghost{background:transparent}
+  .btn.danger{background:#37161f;color:var(--danger);border-color:#4a2330}
+  .btn.block{width:100%}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  label{display:block;font-size:11px;color:var(--mut);margin:10px 0 4px}
+  label:first-child{margin-top:0}
   input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
-        border-radius:7px;padding:7px 9px;font:inherit}
+        border-radius:var(--r-sm);padding:7px 9px;font:inherit;outline:none;transition:.12s}
+  input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(92,200,255,.15)}
   textarea{resize:vertical;min-height:54px;font-family:ui-monospace,monospace;font-size:12px}
-  button{background:var(--acc);color:#04121f;border:0;border-radius:7px;padding:8px 12px;font-weight:600;
-         cursor:pointer}
-  button.sec{background:#1b2438;color:var(--ink)}
-  button.danger{background:#3a1620;color:#ff9aa9}
-  button:hover{filter:brightness(1.08)}
-  .row{display:flex;gap:8px}.row>*{flex:1}
-  .preview{background:#05070c;border:1px solid var(--line);border-radius:12px;overflow:hidden;
-           display:flex;align-items:center;justify-content:center;min-height:300px}
-  .preview img,.preview video{max-width:100%;max-height:62vh;display:block}
-  .scrub{display:flex;align-items:center;gap:10px;margin-top:10px}
-  .scrub input[type=range]{flex:1}
-  .clip{padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;
-        background:var(--panel);font-size:13px}
-  .clip:hover{border-color:var(--acc)}
-  .clip.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
-  .clip .meta{color:var(--mut);font-size:11px;margin-top:2px}
-  .tag{display:inline-block;background:#1b2438;color:var(--acc);border-radius:5px;padding:1px 6px;font-size:10px}
-  .muted{color:var(--mut);font-size:12px}
+  .row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+  .field{margin-bottom:10px}
+
+  /* ---------- app grid ---------- */
+  .app{display:grid;height:calc(100vh - 53px);
+       grid-template-columns:268px minmax(0,1fr) 316px;
+       grid-template-rows:minmax(0,1fr) 196px;
+       grid-template-areas:"tools stage inspector" "tools timeline inspector"}
+  .panel{background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+  .tools{grid-area:tools;border-right:1px solid var(--line)}
+  .stage-wrap{grid-area:stage;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+  .inspector{grid-area:inspector;border-left:1px solid var(--line);background:var(--panel2)}
+  .timeline{grid-area:timeline;border-top:1px solid var(--line);border-right:1px solid var(--line);
+            background:var(--panel2);display:flex;flex-direction:column}
+
+  /* ---------- tabs ---------- */
+  .tabbar{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--line);background:var(--panel)}
+  .tabbtn{flex:1;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--mut);
+          padding:9px 4px;font:inherit;font-weight:600;font-size:12.5px;cursor:pointer;border-radius:6px 6px 0 0}
+  .tabbtn:hover{color:var(--ink);background:#131a28}
+  .tabbtn.on{color:var(--acc);border-bottom-color:var(--acc)}
+  .tabbody{flex:1;overflow:auto;padding:14px}
+  .tabpane{display:none}
+  .tabpane.on{display:block;animation:fade .15s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+  .sec-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut2);margin:0 0 10px}
+  .card{background:var(--elev);border:1px solid var(--line);border-radius:var(--r);padding:13px;margin-bottom:12px}
+  .card h3{margin:0 0 4px;font-size:13px}
+  .hint{font-size:11.5px;color:var(--mut2);line-height:1.5}
+
+  /* ---------- preview stage ---------- */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;
+         background:radial-gradient(circle at 50% 40%,#0d1320,#05070c);position:relative}
+  .stage img,.stage video{max-width:96%;max-height:96%;border-radius:8px;
+         box-shadow:0 8px 40px rgba(0,0,0,.55);background:#000}
+  .stage .empty{color:var(--mut2);text-align:center;padding:30px}
+  .stage .empty .big{font-size:15px;color:var(--mut);margin-bottom:6px}
+  .badge{position:absolute;top:12px;left:12px;font-size:11px;color:var(--mut);
+         background:rgba(8,11,17,.7);border:1px solid var(--line);padding:3px 9px;border-radius:20px}
+  .transport{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line);
+             background:var(--panel)}
+  .transport .t{font-variant-numeric:tabular-nums;font-size:12px;color:var(--mut);min-width:74px}
+  .transport input[type=range]{flex:1;accent-color:var(--acc);cursor:pointer}
+  .rinfo{font-size:11.5px;color:var(--mut);padding:0 16px 9px;background:var(--panel);min-height:0}
+
+  /* ---------- timeline ---------- */
+  .tl-head{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
+           font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut2)}
+  .tl-head .dur{color:var(--mut);text-transform:none;letter-spacing:0}
+  .tl-body{position:relative;flex:1;overflow:auto;padding:8px 0}
+  .tl-row{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:8px;padding:3px 12px}
+  .tl-label{font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tl-lane{position:relative;height:34px;background:var(--panel);border:1px solid var(--line);
+           border-radius:7px;overflow:hidden}
+  .tl-clip{position:absolute;top:3px;bottom:3px;border-radius:5px;display:flex;align-items:center;
+           padding:0 7px;font-size:11px;color:#04121f;font-weight:600;cursor:pointer;overflow:hidden;
+           box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);transition:.1s}
+  .tl-clip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tl-clip:hover{filter:brightness(1.1)}
+  .tl-clip.sel{box-shadow:inset 0 0 0 2px #fff,0 2px 10px rgba(0,0,0,.4);z-index:2}
+  .tl-empty{color:var(--mut2);font-size:12px;padding:22px 14px;text-align:center}
+  .tl-playhead{position:absolute;top:0;width:2px;background:var(--brand);box-shadow:0 0 8px var(--brand);
+               pointer-events:none;display:none;z-index:3}
+  .tl-playhead:before{content:'';position:absolute;top:-1px;left:-4px;border:5px solid transparent;
+               border-top-color:var(--brand)}
+
+  /* ---------- inspector / chat ---------- */
   .pill{font-size:11px;color:var(--mut)}
-  .grow{flex:2}
-  details summary{cursor:pointer;color:var(--mut);font-size:12px;margin-top:8px}
-  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0e1320;
-         border:1px solid var(--line);padding:9px 14px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none}
-  .toast.show{opacity:1}
-  .switch{position:relative;width:38px;height:20px}
-  .switch input{display:none}.slider{position:absolute;inset:0;background:#26304a;border-radius:20px;transition:.2s}
+  .clip-meta{display:inline-block;background:#1b2438;color:var(--acc);border-radius:5px;
+             padding:2px 7px;font-size:11px;margin-bottom:10px}
+  .chat{display:flex;flex-direction:column;height:100%}
+  .chatlog{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;padding:2px}
+  .bub{max-width:88%;padding:8px 11px;border-radius:11px;font-size:12.5px;white-space:pre-wrap}
+  .bub.u{align-self:flex-end;background:#1d2b4a;color:#dfe8fb}
+  .bub.a{align-self:flex-start;background:var(--panel2);border:1px solid var(--line)}
+  .chatin{display:flex;gap:8px;margin-top:10px}
+  .empty-i{color:var(--mut2);font-size:12.5px;text-align:center;padding:26px 10px}
+
+  /* ---------- misc ---------- */
+  .switch{position:relative;width:36px;height:20px;flex:0 0 auto}
+  .switch input{display:none}
+  .slider{position:absolute;inset:0;background:#26304a;border-radius:20px;transition:.2s;cursor:pointer}
   .slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
-  .switch input:checked+.slider{background:var(--ok)}.switch input:checked+.slider:before{transform:translateX(18px)}
+  .switch input:checked+.slider{background:var(--ok)}
+  .switch input:checked+.slider:before{transform:translateX(16px)}
+  .toast{position:fixed;bottom:210px;left:50%;transform:translateX(-50%);background:var(--elev);
+         border:1px solid var(--line2);padding:9px 16px;border-radius:9px;opacity:0;transition:.2s;
+         pointer-events:none;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .toast.show{opacity:1}
 </style>
 </head>
 <body>
 <header>
-  <span class="dot"></span><h1>다봐요 <b style="color:var(--acc)">Studio</b></h1>
-  <span class="pill" id="store"></span>
-  <span class="live">에이전트와 실시간 동기화
-    <label class="switch"><input type="checkbox" id="live" checked><span class="slider"></span></label>
-  </span>
+  <span class="brand"><span class="dot"></span>다봐요 <b>Studio</b></span>
+  <div class="hgroup proj">
+    <select id="proj" style="flex:1"></select>
+    <button class="btn icon sm ghost" onclick="refreshProjects()" title="새로고침">↻</button>
+    <button class="btn sm" onclick="createProject()">+ 새 프로젝트</button>
+  </div>
+  <span class="sp"></span>
+  <span class="store" id="store"></span>
+  <label class="live">동기화<span class="switch"><input type="checkbox" id="live" checked><span class="slider"></span></span></label>
+  <button class="btn brand" id="renderBtn" onclick="doRender()">▶ 렌더</button>
 </header>
 
-<div class="wrap">
-  <!-- LEFT: project + add -->
-  <div class="col left">
-    <h2>프로젝트</h2>
-    <div class="card">
-      <select id="proj"></select>
-      <div class="row" style="margin-top:8px">
-        <button class="sec" onclick="refreshProjects()">↻</button>
-        <button onclick="createProject()" class="grow">+ 새 프로젝트</button>
+<div class="app">
+  <!-- ===== LEFT: tools ===== -->
+  <div class="panel tools">
+    <div class="tabbar">
+      <button class="tabbtn on" data-group="tools" data-name="media" onclick="showTab('tools','media')">미디어</button>
+      <button class="tabbtn" data-group="tools" data-name="text" onclick="showTab('tools','text')">텍스트</button>
+      <button class="tabbtn" data-group="tools" data-name="graphic" onclick="showTab('tools','graphic')">그래픽</button>
+      <button class="tabbtn" data-group="tools" data-name="fx" onclick="showTab('tools','fx')">효과</button>
+    </div>
+    <div class="tabbody">
+      <!-- 미디어 -->
+      <div class="tabpane on" data-group="tools" data-name="media">
+        <div class="sec-title">영상 / 이미지 에셋</div>
+        <div class="card">
+          <label>등록된 에셋</label>
+          <select id="mediaSel"></select>
+          <div class="row" style="margin-top:8px">
+            <div><label>시작(s)</label><input id="medStart" type="number" step="0.1" value="0"></div>
+            <div><label>길이(s)</label><input id="medDur" type="number" step="0.1" value="5"></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn icon ghost" onclick="loadAssets()" title="에셋 새로고침">↻</button>
+            <button class="btn primary" style="flex:2" onclick="addMedia()">＋ 타임라인에 추가</button>
+          </div>
+        </div>
+        <p class="hint">발행/업로드된 영상이 여기 드롭다운에 나타납니다. 골라서 타임라인에 올린 뒤, 텍스트·효과를 얹어 다시 렌더하세요.</p>
       </div>
-    </div>
-
-    <h2>요소 추가</h2>
-    <div class="card">
-      <label>배경 그라데이션</label>
-      <div class="row"><input id="bg1" value="#1a2c5e"><input id="bg2" value="#0b0e16"></div>
-      <button class="sec" style="margin-top:8px;width:100%" onclick="addBackground()">배경 추가</button>
-    </div>
-    <div class="card">
-      <label>텍스트</label>
-      <input id="txt" value="제품 소개">
-      <div class="row" style="margin-top:6px">
-        <input id="txtSize" type="number" value="90" title="size">
-        <input id="txtColor" value="#ffffff" title="color">
+      <!-- 텍스트 -->
+      <div class="tabpane" data-group="tools" data-name="text">
+        <div class="sec-title">자막 / 제목</div>
+        <div class="card">
+          <h3>텍스트</h3>
+          <label>내용</label>
+          <input id="txt" value="제품 소개">
+          <div class="row" style="margin-top:6px">
+            <div><label>크기</label><input id="txtSize" type="number" value="90"></div>
+            <div><label>색</label><input id="txtColor" value="#ffffff"></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="addText()">＋ 텍스트 추가</button>
+        </div>
+        <div class="card">
+          <h3>말풍선 콜아웃</h3>
+          <label>내용</label>
+          <input id="coTxt" value="이 부분을 설명">
+          <div class="row" style="margin-top:6px">
+            <div><label>X</label><input id="coX" type="number" value="640"></div>
+            <div><label>Y</label><input id="coY" type="number" value="360"></div>
+            <div><label>꼬리</label><select id="coSide"><option>bottom</option><option>top</option><option>left</option><option>right</option></select></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="addCallout()">＋ 콜아웃 추가</button>
+        </div>
       </div>
-      <button class="sec" style="margin-top:8px;width:100%" onclick="addText()">텍스트 추가</button>
-    </div>
-    <div class="card">
-      <label>말풍선 콜아웃</label>
-      <input id="coTxt" value="이 부분을 설명">
-      <div class="row" style="margin-top:6px">
-        <input id="coX" type="number" value="640" title="x">
-        <input id="coY" type="number" value="360" title="y">
-        <select id="coSide"><option>bottom</option><option>top</option><option>left</option><option>right</option></select>
+      <!-- 그래픽 -->
+      <div class="tabpane" data-group="tools" data-name="graphic">
+        <div class="sec-title">배경 / 그래픽</div>
+        <div class="card">
+          <h3>배경 그라데이션</h3>
+          <div class="row">
+            <div><label>시작색</label><input id="bg1" value="#1a2c5e"></div>
+            <div><label>끝색</label><input id="bg2" value="#0b0e16"></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="addBackground()">＋ 배경 추가</button>
+        </div>
       </div>
-      <button class="sec" style="margin-top:8px;width:100%" onclick="addCallout()">콜아웃 추가</button>
-    </div>
-    <div class="card">
-      <label>마스터 이펙트</label>
-      <select id="fx"></select>
-      <button class="sec" style="margin-top:8px;width:100%" onclick="addEffect()">이펙트 추가</button>
-    </div>
-    <div class="card">
-      <label>미디어 (영상/이미지 에셋)</label>
-      <select id="mediaSel"></select>
-      <div class="row" style="margin-top:6px">
-        <input id="medStart" type="number" step="0.1" value="0" title="시작(s)">
-        <input id="medDur" type="number" step="0.1" value="5" title="길이(s)">
-      </div>
-      <div class="row" style="margin-top:8px">
-        <button class="sec" onclick="loadAssets()" title="에셋 새로고침">↻</button>
-        <button class="sec grow" onclick="addMedia()">미디어 추가</button>
+      <!-- 효과 -->
+      <div class="tabpane" data-group="tools" data-name="fx">
+        <div class="sec-title">마스터 이펙트</div>
+        <div class="card">
+          <label>이펙트</label>
+          <select id="fx"></select>
+          <button class="btn block" style="margin-top:10px" onclick="addEffect()">＋ 이펙트 추가</button>
+        </div>
+        <p class="hint">선택한 이펙트가 전체 영상(마스터)에 적용됩니다.</p>
       </div>
     </div>
   </div>
 
-  <!-- CENTER: preview -->
-  <div class="col">
-    <div class="preview" id="stage"><span class="muted">프로젝트를 선택하거나 만들어 주세요</span></div>
-    <div class="scrub">
-      <span class="muted" id="tlabel">0.0s</span>
+  <!-- ===== CENTER: stage ===== -->
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <div class="empty"><div class="big">프로젝트를 선택하거나 만들어 주세요</div>왼쪽 도구로 배경·텍스트·미디어를 추가하고, 아래에서 미리보기·렌더하세요.</div>
+    </div>
+    <div class="transport">
+      <button class="btn icon" id="playBtn" onclick="playToggle()" title="재생/일시정지">▶</button>
+      <span class="t" id="tlabel">0.0s</span>
       <input id="time" type="range" min="0" max="10" step="0.1" value="0" oninput="onScrub()">
-      <button class="sec" onclick="undoEdit()" title="마지막 편집 되돌리기">↶ 되돌리기</button>
-      <button class="sec" onclick="refreshPreview()">미리보기</button>
-      <button onclick="doRender()" id="renderBtn">렌더 ▶</button>
+      <button class="btn sm ghost" onclick="refreshPreview()" title="현재 프레임 새로고침">미리보기</button>
+      <button class="btn sm ghost" onclick="undoEdit()" title="마지막 편집 되돌리기">↶ 되돌리기</button>
     </div>
-    <div id="renderInfo" class="muted" style="margin-top:8px"></div>
+    <div class="rinfo" id="renderInfo"></div>
+  </div>
 
-    <h2 style="margin-top:18px">AI 편집 채팅 <span id="chatStatus" class="pill"></span></h2>
-    <div class="card" style="display:flex;flex-direction:column;height:220px;padding:0">
-      <div id="chatLog" style="flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px"></div>
-      <div class="row" style="padding:8px;border-top:1px solid var(--line)">
-        <input id="chatIn" placeholder="예: 빨간 제목 '신제품'을 가운데에 추가해줘" onkeydown="if(event.key==='Enter')sendChat()">
-        <button onclick="sendChat()" id="chatBtn" style="flex:0 0 auto">전송</button>
+  <!-- ===== RIGHT: inspector ===== -->
+  <div class="panel inspector">
+    <div class="tabbar">
+      <button class="tabbtn on" data-group="insp" data-name="props" onclick="showTab('insp','props')">속성</button>
+      <button class="tabbtn" data-group="insp" data-name="ai" onclick="showTab('insp','ai')">AI 채팅</button>
+      <button class="tabbtn" data-group="insp" data-name="code" onclick="showTab('insp','code')">코드</button>
+    </div>
+    <div class="tabbody">
+      <!-- 속성 -->
+      <div class="tabpane on" data-group="insp" data-name="props">
+        <div id="inspectorBody"><div class="empty-i">타임라인에서 클립을 선택하면<br>여기서 편집할 수 있습니다.</div></div>
+      </div>
+      <!-- AI -->
+      <div class="tabpane" data-group="insp" data-name="ai" style="height:100%">
+        <div class="chat">
+          <div style="margin-bottom:8px"><span class="pill" id="chatStatus"></span></div>
+          <div class="chatlog" id="chatLog"></div>
+          <div class="chatin">
+            <input id="chatIn" placeholder="예: 빨간 제목 '신제품'을 가운데 추가해줘" onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="btn primary" id="chatBtn" onclick="sendChat()">전송</button>
+          </div>
+        </div>
+      </div>
+      <!-- 코드 -->
+      <div class="tabpane" data-group="insp" data-name="code">
+        <div class="sec-title">원본 스펙 (JSON)</div>
+        <textarea id="rawspec" style="min-height:320px"></textarea>
+        <button class="btn block" style="margin-top:8px" onclick="saveSpec()">스펙 저장 (PUT)</button>
       </div>
     </div>
   </div>
 
-  <!-- RIGHT: clips + edit -->
-  <div class="col right">
-    <h2>클립 / 타임라인</h2>
-    <div id="clips"></div>
-
-    <h2>선택한 클립 편집</h2>
-    <div class="card" id="editCard"><span class="muted">클립을 선택하세요</span></div>
-
-    <details>
-      <summary>원본 스펙(JSON) 보기/편집</summary>
-      <textarea id="rawspec" style="min-height:160px;margin-top:8px"></textarea>
-      <button class="sec" style="margin-top:6px;width:100%" onclick="saveSpec()">스펙 저장(PUT)</button>
-    </details>
+  <!-- ===== BOTTOM: timeline ===== -->
+  <div class="timeline">
+    <div class="tl-head">타임라인 <span class="dur" id="durlabel"></span></div>
+    <div class="tl-body" id="tlBody">
+      <div id="timelineTracks"></div>
+      <div class="tl-playhead" id="playhead"></div>
+    </div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const $=s=>document.querySelector(s);
-let PID=null, SPEC=null, SEL=null, CAPS=null;
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+let PID=null, SPEC=null, SEL=null, CAPS=null, ASSETS={}, PLAYING=false;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1700);}
+function showTab(g,n){
+  document.querySelectorAll(`.tabpane[data-group="${g}"]`).forEach(p=>p.classList.toggle('on',p.dataset.name===n));
+  document.querySelectorAll(`.tabbtn[data-group="${g}"]`).forEach(b=>b.classList.toggle('on',b.dataset.name===n));
+}
 async function api(method,path,body){
   const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},
     body:body?JSON.stringify(body):undefined});
   if(!r.ok){const e=await r.json().catch(()=>({error:r.statusText}));throw new Error(e.error||r.statusText);}
   const ct=r.headers.get('Content-Type')||'';return ct.includes('json')?r.json():r;
 }
+
 async function boot(){
   CAPS=await api('GET','/api/capabilities');
-  $('#fx').innerHTML=CAPS.effects.map(e=>`<option>${e}</option>`).join('');
+  $('#fx').innerHTML=(CAPS.effects||[]).map(e=>`<option>${e}</option>`).join('');
   await refreshProjects();
   await loadAssets();
-  setInterval(()=>{if($('#live').checked&&PID)softRefresh();},2500);
-}
-let ASSETS={};
-async function loadAssets(){
-  try{
-    const {assets}=await api('GET','/api/assets');
-    const media=(assets||[]).filter(a=>a.kind==='video'||a.kind==='image');
-    ASSETS={};media.forEach(a=>ASSETS[a.id]=a);
-    const sel=$('#mediaSel');
-    sel.innerHTML = media.length
-      ? media.map(a=>{const d=(a.media&&a.media.duration)?' · '+a.media.duration+'s':'';
-          return `<option value="${a.id}">${a.kind==='video'?'🎬':'🖼'} ${a.id.slice(0,12)} · ${a.role||''}${d}</option>`;}).join('')
-      : '<option value="">등록된 미디어 없음 — 먼저 업로드/발행</option>';
-  }catch(e){/* assets endpoint unavailable */}
-}
-async function addMedia(){
-  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
-  const a=ASSETS[$('#mediaSel').value];
-  if(!a){toast('추가할 미디어를 선택하세요');return;}
-  const start=parseFloat($('#medStart').value)||0;
-  const duration=parseFloat($('#medDur').value)||(a.media&&a.media.duration)||5;
-  await api('POST','/api/projects/'+PID+'/media',
-    {path:a.path,kind:a.kind,start,duration,fit:'cover'});
-  await loadProject();toast('미디어 추가: '+a.id.slice(0,8));
+  chatStatus();
+  window.addEventListener('resize',updatePlayhead);
+  setInterval(()=>{if($('#live').checked&&PID&&!PLAYING)softRefresh();},2500);
 }
 async function refreshProjects(){
   const {projects}=await api('GET','/api/projects');
-  $('#proj').innerHTML=projects.map(p=>`<option value="${p.id}">${p.name} · ${p.resolution.join('×')}</option>`).join('');
+  $('#proj').innerHTML=projects.length
+    ? projects.map(p=>`<option value="${p.id}">${p.name} · ${(p.resolution||[]).join('×')}</option>`).join('')
+    : '<option value="">프로젝트 없음</option>';
   if(projects.length){PID=$('#proj').value=projects[projects.length-1].id;await loadProject();}
+  else{PID=null;}
 }
-$('#proj').onchange=async e=>{PID=e.target.value;await loadProject();};
+$('#proj').onchange=async e=>{if(e.target.value){PID=e.target.value;await loadProject();}};
 async function createProject(){
   const r=await api('POST','/api/projects',{width:1280,height:720,fps:24,name:'studio-'+Date.now()%10000});
-  await refreshProjects();PID=r.project_id;$('#proj').value=PID;await loadProject();toast('생성됨');
+  await refreshProjects();PID=r.project_id;$('#proj').value=PID;await loadProject();toast('프로젝트 생성됨');
 }
 async function loadProject(){
+  stopPlay();
   SPEC=await api('GET','/api/projects/'+PID);
   $('#store').textContent='store: '+(SPEC.name||PID);
-  const dur=SPEC.duration||10;$('#time').max=dur;
+  const dur=SPEC.duration||10;$('#time').max=dur;$('#durlabel').textContent='· '+dur+'s · '+(SPEC.width||'?')+'×'+(SPEC.height||'?');
   $('#rawspec').value=JSON.stringify(SPEC,null,2);
   await loadClips();refreshPreview();
 }
-async function softRefresh(){ // reflect agent edits without disrupting editing
+async function softRefresh(){
   try{const s=await api('GET','/api/projects/'+PID);
     if(JSON.stringify(s)!==JSON.stringify(SPEC)){SPEC=s;$('#rawspec').value=JSON.stringify(s,null,2);
       await loadClips();refreshPreview();toast('에이전트 변경 반영됨');}}
-  catch(e){PID=null;await refreshProjects();}  // stale/empty id -> stop polling, resync
+  catch(e){PID=null;await refreshProjects();}
 }
 async function loadClips(){
   const {tracks}=await api('GET','/api/projects/'+PID+'/clips');
-  const el=$('#clips');el.innerHTML='';
-  tracks.forEach(tr=>{
-    tr.clips.forEach(c=>{
-      const d=document.createElement('div');d.className='clip'+(SEL&&SEL.track===tr.track&&SEL.index===c.index?' sel':'');
-      d.innerHTML=`<div><span class="tag">${tr.track}</span> ${c.type||''} <b>#${c.index}</b></div>
-        <div class="meta">${(c.preview||'').replace(/</g,'&lt;')} · ${c.start??''}s +${c.duration??''}s</div>`;
-      d.onclick=()=>selectClip(tr.track,c.index);el.appendChild(d);
-    });
-  });
+  renderTimeline(tracks);
+}
+function clipColor(t){return {video:'#2f6fe0',image:'#2f9fe0',text:'#3bbf8e',callout:'#d9a13a',
+  solid:'#7b5cff',gradient:'#7b5cff'}[t]||'#4a90d9';}
+function renderTimeline(tracks){
+  const dur=parseFloat($('#time').max)||10;const host=$('#timelineTracks');
+  if(!tracks||!tracks.length){host.innerHTML='<div class="tl-empty">클립이 없습니다 — 왼쪽 도구에서 배경·텍스트·미디어를 추가하세요</div>';updatePlayhead();return;}
+  host.innerHTML=tracks.map(tr=>`
+    <div class="tl-row">
+      <div class="tl-label" title="${tr.track}">${tr.track}</div>
+      <div class="tl-lane">${tr.clips.map(c=>{
+        const left=Math.min(98,Math.max(0,(c.start||0)/dur*100));
+        const w=Math.min(100-left,Math.max(3,((c.duration||0)/dur)*100));
+        const sel=SEL&&SEL.track===tr.track&&SEL.index===c.index;
+        const lbl=`#${c.index} ${c.type||''}`;
+        return `<div class="tl-clip${sel?' sel':''}" style="left:${left}%;width:${w}%;background:${clipColor(c.type)}"
+          title="${(c.preview||lbl).replace(/"/g,'&quot;')}" onclick="selectClip('${tr.track}',${c.index})"><span>${lbl}</span></div>`;
+      }).join('')}</div>
+    </div>`).join('');
+  updatePlayhead();
 }
 function selectClip(track,index){
-  SEL={track,index};loadClips();
-  const tr=SPEC.tracks.find(t=>t.name===track);const clip=tr.clips[index];const el=clip.element||{};
+  SEL={track,index};
+  const tr=SPEC.tracks.find(t=>t.name===track);if(!tr)return;
+  const clip=tr.clips[index];const el=clip.element||{};
   const pos=(clip.transform&&clip.transform.position)||['',''];
-  $('#editCard').innerHTML=`
-    <div class="pill">${track} #${index} · ${el.type||''}</div>
-    ${el.text!==undefined?`<label>텍스트</label><textarea id="eT">${el.text||''}</textarea>`:''}
-    ${el.color!==undefined?`<label>색</label><input id="eC" value="${el.color||''}">`:''}
+  $('#inspectorBody').innerHTML=`
+    <div class="clip-meta">${track} · #${index} · ${el.type||''}</div>
+    ${el.text!==undefined?`<div class="field"><label>텍스트</label><textarea id="eT">${(el.text||'').replace(/</g,'&lt;')}</textarea></div>`:''}
+    ${el.color!==undefined?`<div class="field"><label>색</label><input id="eC" value="${el.color||''}"></div>`:''}
     <div class="row"><div><label>시작(s)</label><input id="eS" type="number" step="0.1" value="${clip.start??0}"></div>
       <div><label>길이(s)</label><input id="eD" type="number" step="0.1" value="${clip.duration??0}"></div></div>
-    <div class="row"><div><label>X</label><input id="eX" type="number" value="${pos[0]}"></div>
+    <div class="row" style="margin-top:8px"><div><label>X</label><input id="eX" type="number" value="${pos[0]}"></div>
       <div><label>Y</label><input id="eY" type="number" value="${pos[1]}"></div></div>
-    <div class="row" style="margin-top:10px">
-      <button onclick="applyClip()">적용</button>
-      <button class="danger" onclick="delClip()">삭제</button>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" style="flex:2" onclick="applyClip()">적용</button>
+      <button class="btn danger" onclick="delClip()">삭제</button>
     </div>`;
+  showTab('insp','props');
+  renderTimeline(SPEC.tracks.map(t=>({track:t.name,clips:t.clips.map((c,i)=>({index:i,type:(c.element||{}).type,start:c.start,duration:c.duration,preview:(c.element||{}).text}))})));
 }
 async function applyClip(){
   const patch={element:{}};
@@ -266,51 +403,103 @@ async function applyClip(){
 }
 async function delClip(){
   await api('DELETE',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`);SEL=null;
-  $('#editCard').innerHTML='<span class="muted">클립을 선택하세요</span>';await loadProject();toast('삭제됨');
+  $('#inspectorBody').innerHTML='<div class="empty-i">타임라인에서 클립을 선택하면<br>여기서 편집할 수 있습니다.</div>';
+  await loadProject();toast('클립 삭제됨');
 }
 async function addBackground(){
   await api('POST','/api/projects/'+PID+'/background',
     {gradient:{stops:[[0,$('#bg1').value],[1,$('#bg2').value]],kind:'radial'},duration:SPEC.duration||10});
-  await loadProject();toast('배경 추가');
+  await loadProject();toast('배경 추가됨');
 }
 async function addText(){
   await api('POST','/api/projects/'+PID+'/text',
     {text:$('#txt').value,size:+$('#txtSize').value,color:$('#txtColor').value,font:'kr-bold',duration:4,
      transition_in:{type:'fade',duration:0.4}});
-  await loadProject();toast('텍스트 추가');
+  await loadProject();toast('텍스트 추가됨');
 }
 async function addCallout(){
   await api('POST','/api/projects/'+PID+'/callout',
     {text:$('#coTxt').value,position:[+$('#coX').value,+$('#coY').value],tail_side:$('#coSide').value,
      font:'kr-bold',duration:3,transition_in:{type:'zoom',duration:0.4}});
-  await loadProject();toast('콜아웃 추가');
+  await loadProject();toast('콜아웃 추가됨');
 }
 async function addEffect(){
   await api('POST','/api/projects/'+PID+'/effect',{effect:{type:$('#fx').value}});
   await loadProject();toast('이펙트 추가: '+$('#fx').value);
 }
+async function loadAssets(){
+  try{
+    const {assets}=await api('GET','/api/assets');
+    const media=(assets||[]).filter(a=>a.kind==='video'||a.kind==='image');
+    ASSETS={};media.forEach(a=>ASSETS[a.id]=a);
+    $('#mediaSel').innerHTML = media.length
+      ? media.map(a=>{const d=(a.media&&a.media.duration)?' · '+a.media.duration+'s':'';
+          return `<option value="${a.id}">${a.kind==='video'?'🎬':'🖼'} ${a.id.slice(0,12)} · ${a.role||''}${d}</option>`;}).join('')
+      : '<option value="">등록된 미디어 없음 — 먼저 발행/업로드</option>';
+  }catch(e){$('#mediaSel').innerHTML='<option value="">에셋을 불러올 수 없음</option>';}
+}
+async function addMedia(){
+  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
+  const a=ASSETS[$('#mediaSel').value];
+  if(!a){toast('추가할 미디어를 선택하세요');return;}
+  const start=parseFloat($('#medStart').value)||0;
+  const duration=parseFloat($('#medDur').value)||(a.media&&a.media.duration)||5;
+  await api('POST','/api/projects/'+PID+'/media',{path:a.path,kind:a.kind,start,duration,fit:'cover'});
+  await loadProject();toast('미디어 추가: '+a.id.slice(0,8));
+}
 async function saveSpec(){
   try{const spec=JSON.parse($('#rawspec').value);await api('PUT','/api/projects/'+PID,{spec});
     await loadProject();toast('스펙 저장됨');}catch(e){toast('JSON 오류: '+e.message);}
 }
-function onScrub(){$('#tlabel').textContent=(+$('#time').value).toFixed(1)+'s';clearTimeout(window._sc);
-  window._sc=setTimeout(refreshPreview,180);}
+function onScrub(){stopPlay();$('#tlabel').textContent=(+$('#time').value).toFixed(1)+'s';
+  clearTimeout(window._sc);window._sc=setTimeout(refreshPreview,160);updatePlayhead();}
 function refreshPreview(){
   if(!PID)return;const t=$('#time').value;
-  $('#stage').innerHTML=`<img src="/api/projects/${PID}/preview?t=${t}&_=${Date.now()}"/>`;
+  $('#stage').innerHTML=`<img src="/api/projects/${PID}/preview?t=${t}&_=${Date.now()}" onload="updatePlayhead()"/>`
+    +`<span class="badge">${(+t).toFixed(1)}s · 미리보기</span>`;
 }
+function updatePlayhead(){
+  const ph=$('#playhead');if(!ph)return;
+  const lane=document.querySelector('.tl-lane');const body=$('#tlBody');
+  if(!lane||!body){ph.style.display='none';return;}
+  const dur=parseFloat($('#time').max)||10,t=parseFloat($('#time').value)||0;
+  const lr=lane.getBoundingClientRect(),br=body.getBoundingClientRect();
+  ph.style.display='block';
+  ph.style.left=(lr.left-br.left+(t/dur)*lr.width)+'px';
+  ph.style.height=body.scrollHeight+'px';
+}
+// ---- lightweight play: step the scrubber, re-rendering preview frames ----
+function playToggle(){
+  if(PLAYING){stopPlay();return;}
+  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
+  PLAYING=true;$('#playBtn').textContent='⏸';
+  const step=0.2,max=parseFloat($('#time').max)||10;
+  const tick=()=>{
+    if(!PLAYING)return;
+    let t=parseFloat($('#time').value)+step;if(t>max)t=0;
+    $('#time').value=t;$('#tlabel').textContent=t.toFixed(1)+'s';
+    const img=new Image();
+    img.onload=()=>{if(!PLAYING)return;$('#stage').innerHTML='';$('#stage').appendChild(img);
+      const b=document.createElement('span');b.className='badge';b.textContent=t.toFixed(1)+'s · 재생';$('#stage').appendChild(b);
+      updatePlayhead();setTimeout(tick,30);};
+    img.onerror=()=>{if(PLAYING)setTimeout(tick,150);};
+    img.src=`/api/projects/${PID}/preview?t=${t}&_=${Date.now()}`;
+  };
+  tick();
+}
+function stopPlay(){PLAYING=false;const b=$('#playBtn');if(b)b.textContent='▶';}
 async function doRender(){
-  $('#renderBtn').textContent='렌더 중…';$('#renderInfo').textContent='렌더링 중입니다…';
+  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
+  stopPlay();
+  $('#renderBtn').disabled=true;$('#renderBtn').textContent='렌더 중…';$('#renderInfo').textContent='렌더링 중입니다…';
   try{const r=await api('POST','/api/projects/'+PID+'/render',{});
-    $('#stage').innerHTML=`<video src="${r.url}?_=${Date.now()}" controls autoplay loop></video>`;
+    $('#stage').innerHTML=`<video src="${r.url}?_=${Date.now()}" controls autoplay loop></video><span class="badge">렌더 결과</span>`;
     $('#renderInfo').textContent=`완료 · ${r.frames}프레임 · ${r.render_seconds}s · ${(r.bytes/1e6).toFixed(1)}MB`;
-  }catch(e){$('#renderInfo').textContent='오류: '+e.message;}
-  $('#renderBtn').textContent='렌더 ▶';
+  }catch(e){$('#renderInfo').textContent='오류: '+e.message;toast('렌더 오류');}
+  $('#renderBtn').disabled=false;$('#renderBtn').textContent='▶ 렌더';
 }
 function chatBubble(role,text){
-  const d=document.createElement('div');
-  d.style.cssText='max-width:85%;padding:7px 11px;border-radius:10px;font-size:13px;white-space:pre-wrap;'+
-    (role==='user'?'align-self:flex-end;background:#1d2b4a;color:#dfe8fb':'align-self:flex-start;background:#0e1320;border:1px solid var(--line)');
+  const d=document.createElement('div');d.className='bub '+(role==='user'?'u':'a');
   d.textContent=text;$('#chatLog').appendChild(d);$('#chatLog').scrollTop=1e9;return d;
 }
 async function chatStatus(){
@@ -330,11 +519,10 @@ async function sendChat(){
   const thinking=chatBubble('assistant','…편집 중');$('#chatBtn').disabled=true;
   try{const r=await api('POST','/api/projects/'+PID+'/chat',{message:msg});
     thinking.textContent=r.reply+(r.actions&&r.actions.length?`  [${r.actions.map(a=>a.name).join(', ')}]`:'');
-    await loadProject();   // reflect the edits the agent made
+    await loadProject();
   }catch(e){thinking.textContent='오류: '+e.message;}
   $('#chatBtn').disabled=false;inp.focus();
 }
-chatStatus();
 boot();
 </script>
 </body>
