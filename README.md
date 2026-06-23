@@ -120,7 +120,7 @@ shot = generate_video("a slow drone shot over a misty forest at dawn",
 
 ### Free photoreal via Google Colab
 1. Open **`colab/dabwayo_gpu_server.ipynb`** in Colab, set Runtime → **GPU (T4)**, Run all.
-2. It loads LTX-Video and prints a public URL.
+2. It loads a video model and prints a public URL.
 3. Point Dabwayo at it and generate real footage with the same tool:
 ```bash
 export DABWAYO_VIDEOGEN_URL='https://xxxx.trycloudflare.com'
@@ -128,6 +128,12 @@ export DABWAYO_VIDEOGEN_PROVIDER=remote
 ```
 The Colab server speaks a tiny contract (`GET /health`, `POST /generate` →
 `video/mp4`), so any GPU box implementing it works as a drop-in backend.
+
+**Free-T4 memory:** the notebook is tuned for the free tier — **fp16** (T4 has
+no bf16), an **8-bit text encoder**, **sequential CPU offload** and **VAE
+tiling**. `MODEL='ltx'` gives photoreal t2v+i2v; if it won't fit it
+**auto-falls back to `MODEL='light'`** (Zeroscope, t2v only). Lower
+`num_frames`/`width`/`height` if a generation hits GPU OOM.
 
 ### Editing only part of a project
 Because the project is a JSON tree, you edit a single clip without touching
