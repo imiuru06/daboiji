@@ -269,6 +269,48 @@ def generate_video(project_id: str, prompt: str, mode: str = "t2v",
     return info
 
 
+# --------------------------------------------------------------------------
+# Watermark removal (remote LaMa server)
+# --------------------------------------------------------------------------
+@mcp.tool()
+def lama_health() -> dict:
+    """Check the remote LaMa watermark-removal server (DABWAYO_LAMA_URL).
+
+    The heavy ML inpainter runs off-box on a Colab GPU server
+    (colab/dabwayo_lama_server.ipynb). Returns its /health payload, or
+    ``{"ok": false, "detail": ...}`` if it is not configured/reachable."""
+    from .dewatermark import health, DewatermarkError
+    try:
+        return {"ok": True, **health()}
+    except DewatermarkError as e:
+        return {"ok": False, "detail": str(e)}
+
+
+@mcp.tool()
+def remove_watermark(input_path: str, regions: List[List[int]],
+                     out_path: Optional[str] = None, pad: int = 48,
+                     feather: int = 4, dilate: int = 9) -> dict:
+    """Erase a static watermark/logo from a video via the remote LaMa server.
+
+    ``input_path`` is a local video file. ``regions`` is one or more boxes
+    ``[[x, y, w, h], ...]`` (pixels, in the video's own resolution) covering the
+    watermark — e.g. the Gemini/Veo ✦ sparkle (bottom-right) or a ModelScope
+    'shutterstock' band. The server inpaints every frame on a padded ROI with
+    LaMa (deep inpainting — far cleaner than classical fills on detailed,
+    moving backgrounds) and muxes the original audio back, so sound is kept.
+
+    Requires DABWAYO_LAMA_URL (run colab/dabwayo_lama_server.ipynb). ``pad``
+    is the ROI padding, ``feather`` the blend softness, ``dilate`` grows the
+    mask so edges are fully covered. Returns the cleaned ``out_path``."""
+    from .dewatermark import remove_watermark as _dewm
+    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    out_path = out_path or os.path.join(_OUTPUT_DIR, f"clean_{uuid.uuid4().hex[:8]}.mp4")
+    t0 = time.time()
+    _dewm(input_path, out_path, regions, pad=pad, feather=feather, dilate=dilate)
+    return {"ok": True, "path": out_path,
+            "seconds": round(time.time() - t0, 2), "regions": regions}
+
+
 @mcp.tool()
 def add_effect(project_id: str, effect: dict, track: Optional[str] = None,
                clip_index: Optional[int] = None) -> dict:
