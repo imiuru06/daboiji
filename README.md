@@ -129,11 +129,13 @@ export DABWAYO_VIDEOGEN_PROVIDER=remote
 The Colab server speaks a tiny contract (`GET /health`, `POST /generate` →
 `video/mp4`), so any GPU box implementing it works as a drop-in backend.
 
-**Free-T4 memory:** the notebook is tuned for the free tier — **fp16** (T4 has
-no bf16), an **8-bit text encoder**, **sequential CPU offload** and **VAE
-tiling**. `MODEL='ltx'` gives photoreal t2v+i2v; if it won't fit it
-**auto-falls back to `MODEL='light'`** (Zeroscope, t2v only). Lower
-`num_frames`/`width`/`height` if a generation hits GPU OOM.
+**Free-T4 reality:** the wall is **system RAM (~12.7 GB)**, not VRAM — and a
+RAM OOM during model load *kills the kernel* (uncatchable). So the notebook
+**defaults to `MODEL='light'`** (Zeroscope, t2v) which loads reliably on the
+free tier. `MODEL='ltx'` (photoreal **t2v+i2v**, fp16 + 8-bit text encoder +
+sequential offload + VAE tiling) needs **Colab Pro / High-RAM**. For photoreal
+**i2v on the free tier**, use a paid key instead (`FAL_KEY` /
+`REPLICATE_API_TOKEN`) — the `fal` / `replicate` providers need no Colab.
 
 ### Editing only part of a project
 Because the project is a JSON tree, you edit a single clip without touching
