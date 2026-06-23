@@ -107,6 +107,18 @@
       <select id="fx"></select>
       <button class="sec" style="margin-top:8px;width:100%" onclick="addEffect()">이펙트 추가</button>
     </div>
+    <div class="card">
+      <label>미디어 (영상/이미지 에셋)</label>
+      <select id="mediaSel"></select>
+      <div class="row" style="margin-top:6px">
+        <input id="medStart" type="number" step="0.1" value="0" title="시작(s)">
+        <input id="medDur" type="number" step="0.1" value="5" title="길이(s)">
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="sec" onclick="loadAssets()" title="에셋 새로고침">↻</button>
+        <button class="sec grow" onclick="addMedia()">미디어 추가</button>
+      </div>
+    </div>
   </div>
 
   <!-- CENTER: preview -->
@@ -162,7 +174,31 @@ async function boot(){
   CAPS=await api('GET','/api/capabilities');
   $('#fx').innerHTML=CAPS.effects.map(e=>`<option>${e}</option>`).join('');
   await refreshProjects();
+  await loadAssets();
   setInterval(()=>{if($('#live').checked&&PID)softRefresh();},2500);
+}
+let ASSETS={};
+async function loadAssets(){
+  try{
+    const {assets}=await api('GET','/api/assets');
+    const media=(assets||[]).filter(a=>a.kind==='video'||a.kind==='image');
+    ASSETS={};media.forEach(a=>ASSETS[a.id]=a);
+    const sel=$('#mediaSel');
+    sel.innerHTML = media.length
+      ? media.map(a=>{const d=(a.media&&a.media.duration)?' · '+a.media.duration+'s':'';
+          return `<option value="${a.id}">${a.kind==='video'?'🎬':'🖼'} ${a.id.slice(0,12)} · ${a.role||''}${d}</option>`;}).join('')
+      : '<option value="">등록된 미디어 없음 — 먼저 업로드/발행</option>';
+  }catch(e){/* assets endpoint unavailable */}
+}
+async function addMedia(){
+  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
+  const a=ASSETS[$('#mediaSel').value];
+  if(!a){toast('추가할 미디어를 선택하세요');return;}
+  const start=parseFloat($('#medStart').value)||0;
+  const duration=parseFloat($('#medDur').value)||(a.media&&a.media.duration)||5;
+  await api('POST','/api/projects/'+PID+'/media',
+    {path:a.path,kind:a.kind,start,duration,fit:'cover'});
+  await loadProject();toast('미디어 추가: '+a.id.slice(0,8));
 }
 async function refreshProjects(){
   const {projects}=await api('GET','/api/projects');
