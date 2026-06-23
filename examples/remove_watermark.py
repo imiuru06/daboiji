@@ -1,6 +1,6 @@
 """Remove a static watermark from a video via per-frame inpainting.
 
-Decodes the source through VideoForge's `video` element, applies the
+Decodes the source through Dabwayo's `video` element, applies the
 `inpaint` effect over the given region(s) every frame, renders, and muxes
 the original audio back losslessly.
 
@@ -18,7 +18,7 @@ import tempfile
 import imageio.v2 as imageio
 import imageio_ffmpeg
 
-import videoforge as vf
+import dabwayo as vf
 
 
 def remove_watermark(src: str, out: str, regions, radius=6, grow=4,

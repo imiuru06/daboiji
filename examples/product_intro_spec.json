@@ -12,7 +12,7 @@
         {
           "element": {
             "type": "video",
-            "path": "/home/user/daboiji/output/dewatermarked_lama.mp4",
+            "path": "/home/user/dabwayo/output/dewatermarked_lama.mp4",
             "fit": "cover",
             "size": [
               1280,
@@ -571,7 +571,7 @@
       "name": "audio",
       "clips": [
         {
-          "path": "/home/user/daboiji/output/dewatermarked_lama.mp4",
+          "path": "/home/user/dabwayo/output/dewatermarked_lama.mp4",
           "start": 0.0
         }
       ]

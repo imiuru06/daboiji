@@ -15,10 +15,10 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import videoforge as vf
-from videoforge.generation import GenRequest, get_provider, list_providers
-from videoforge.generation.registry import _CONSTRUCTORS
-from videoforge.render.encoder import ffmpeg_exe
+import dabwayo as vf
+from dabwayo.generation import GenRequest, get_provider, list_providers
+from dabwayo.generation.registry import _CONSTRUCTORS
+from dabwayo.render.encoder import ffmpeg_exe
 
 
 def _is_h264(path: str) -> bool:
@@ -41,22 +41,22 @@ def test_registry_lists_all_providers():
 
 def test_auto_selection_rules(monkeypatch=None):
     # no env -> local
-    for k in ("VIDEOFORGE_VIDEOGEN_PROVIDER", "VIDEOFORGE_VIDEOGEN_URL",
+    for k in ("DABWAYO_VIDEOGEN_PROVIDER", "DABWAYO_VIDEOGEN_URL",
               "REPLICATE_API_TOKEN", "FAL_KEY", "HF_TOKEN"):
         os.environ.pop(k, None)
     assert get_provider().name == "local"
     # url set -> remote
-    os.environ["VIDEOFORGE_VIDEOGEN_URL"] = "https://example.com"
+    os.environ["DABWAYO_VIDEOGEN_URL"] = "https://example.com"
     assert get_provider().name == "remote"
-    os.environ.pop("VIDEOFORGE_VIDEOGEN_URL")
+    os.environ.pop("DABWAYO_VIDEOGEN_URL")
     # explicit override wins
     assert get_provider("replicate").name == "replicate"
 
 
 def test_remote_requires_url():
-    os.environ.pop("VIDEOFORGE_VIDEOGEN_URL", None)
+    os.environ.pop("DABWAYO_VIDEOGEN_URL", None)
     ok, why = get_provider("remote").available()
-    assert ok is False and "VIDEOFORGE_VIDEOGEN_URL" in why
+    assert ok is False and "DABWAYO_VIDEOGEN_URL" in why
 
 
 def test_local_t2v_renders_h264():

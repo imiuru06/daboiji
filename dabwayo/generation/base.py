@@ -1,7 +1,7 @@
 """Generative-video provider abstraction.
 
 A *provider* turns a prompt (and optionally a source image / first frame) into
-a short MP4 clip on disk. The rest of VideoForge then treats that clip like any
+a short MP4 clip on disk. The rest of Dabwayo then treats that clip like any
 other ``video`` element, so a generated shot composites with text, effects,
 camera moves and audio exactly like hand-authored content.
 

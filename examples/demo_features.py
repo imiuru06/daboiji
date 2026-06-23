@@ -11,8 +11,8 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw
 
-import videoforge as vf
-from videoforge import keyframes as K
+import dabwayo as vf
+from dabwayo import keyframes as K
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -31,7 +31,7 @@ def _side_by_side(before_path, after_path, out_path, labels=("BEFORE", "AFTER"))
     canvas.paste(a, (0, 0))
     canvas.paste(b, (a.width + gap, 0))
     d = ImageDraw.Draw(canvas)
-    from videoforge.render.context import RenderContext
+    from dabwayo.render.context import RenderContext
     font = RenderContext(W, H, 30).load_font("sans-bold", 34)
     d.text((24, 20), labels[0], font=font, fill=(255, 90, 90))
     d.text((a.width + gap + 24, 20), labels[1], font=font, fill=(90, 230, 140))
@@ -45,7 +45,7 @@ def inpaint_demo():
     base = Image.open(os.path.join(GEN, "texture.png")).convert("RGB").resize((W, H))
     wm = base.copy()
     d = ImageDraw.Draw(wm, "RGBA")
-    from videoforge.render.context import RenderContext
+    from dabwayo.render.context import RenderContext
     ctx = RenderContext(W, H, 30)
     f1 = ctx.load_font("sans-bold", 40)
     f2 = ctx.load_font("sans", 26)

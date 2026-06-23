@@ -1,5 +1,5 @@
 {
-  "name": "VideoForge Showcase",
+  "name": "Dabwayo Showcase",
   "width": 1920,
   "height": 1080,
   "fps": 30,
@@ -105,7 +105,7 @@
         {
           "element": {
             "type": "image",
-            "path": "/home/user/daboiji/assets/generated/texture.png",
+            "path": "/home/user/dabwayo/assets/generated/texture.png",
             "fit": "cover",
             "size": [
               1920,
@@ -278,7 +278,7 @@
         {
           "element": {
             "type": "image",
-            "path": "/home/user/daboiji/assets/generated/logo.png",
+            "path": "/home/user/dabwayo/assets/generated/logo.png",
             "size": [
               360,
               360
@@ -349,7 +349,7 @@
         {
           "element": {
             "type": "text",
-            "text": "VIDEOFORGE",
+            "text": "DABWAYO",
             "size": 150,
             "font": "display",
             "color": "#eaf2ff",
@@ -852,7 +852,7 @@
       "name": "audio",
       "clips": [
         {
-          "path": "/home/user/daboiji/assets/generated/ambient.wav",
+          "path": "/home/user/dabwayo/assets/generated/ambient.wav",
           "start": 0.0,
           "gain_db": -3.0,
           "fade_in": 1.0,

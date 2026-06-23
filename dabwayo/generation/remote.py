@@ -2,7 +2,7 @@
 
 * ``RemoteHTTPProvider`` — the one used with **Google Colab**. Point it at any
   HTTP server that speaks the simple contract below (the bundled Colab notebook
-  ``colab/videoforge_gpu_server.ipynb`` implements it with LTX-Video on a free
+  ``colab/dabwayo_gpu_server.ipynb`` implements it with LTX-Video on a free
   T4 GPU). It is also the bring-your-own-endpoint adapter for a local GPU box.
 
       GET  /health            -> {"ok": true, "model": "...", "modes": [...]}
@@ -65,14 +65,14 @@ class RemoteHTTPProvider(VideoGenProvider):
 
     def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None,
                  timeout: float = 900.0):
-        self.base_url = (base_url or os.environ.get("VIDEOFORGE_VIDEOGEN_URL", "")).rstrip("/")
-        self.api_key = api_key or os.environ.get("VIDEOFORGE_VIDEOGEN_KEY", "")
+        self.base_url = (base_url or os.environ.get("DABWAYO_VIDEOGEN_URL", "")).rstrip("/")
+        self.api_key = api_key or os.environ.get("DABWAYO_VIDEOGEN_KEY", "")
         self.timeout = timeout
 
     def available(self) -> tuple[bool, str]:
         if not self.base_url:
-            return False, ("set VIDEOFORGE_VIDEOGEN_URL to your Colab/GPU server "
-                           "URL (see colab/videoforge_gpu_server.ipynb)")
+            return False, ("set DABWAYO_VIDEOGEN_URL to your Colab/GPU server "
+                           "URL (see colab/dabwayo_gpu_server.ipynb)")
         return True, f"remote endpoint {self.base_url}"
 
     def _headers(self) -> dict:
@@ -127,14 +127,14 @@ class RemoteHTTPProvider(VideoGenProvider):
 
 class ReplicateProvider(VideoGenProvider):
     """Replicate hosted models (REPLICATE_API_TOKEN). Default model is an
-    open video model; override with VIDEOFORGE_VIDEOGEN_MODEL='owner/model'."""
+    open video model; override with DABWAYO_VIDEOGEN_MODEL='owner/model'."""
 
     name = "replicate"
     DEFAULT_MODEL = "lightricks/ltx-video"
 
     def __init__(self, token: Optional[str] = None, model: Optional[str] = None):
         self.token = token or os.environ.get("REPLICATE_API_TOKEN", "")
-        self.model = model or os.environ.get("VIDEOFORGE_VIDEOGEN_MODEL", self.DEFAULT_MODEL)
+        self.model = model or os.environ.get("DABWAYO_VIDEOGEN_MODEL", self.DEFAULT_MODEL)
 
     def available(self) -> tuple[bool, str]:
         if not self.token:
@@ -191,7 +191,7 @@ class HuggingFaceProvider(VideoGenProvider):
     def __init__(self, token: Optional[str] = None, model: Optional[str] = None):
         self.token = token or os.environ.get("HF_TOKEN", "") or os.environ.get(
             "HUGGINGFACEHUB_API_TOKEN", "")
-        self.model = model or os.environ.get("VIDEOFORGE_VIDEOGEN_MODEL", self.DEFAULT_MODEL)
+        self.model = model or os.environ.get("DABWAYO_VIDEOGEN_MODEL", self.DEFAULT_MODEL)
 
     def available(self) -> tuple[bool, str]:
         if not self.token:
@@ -216,7 +216,7 @@ class HuggingFaceProvider(VideoGenProvider):
 
 
 class FalProvider(VideoGenProvider):
-    """fal.ai hosted models (FAL_KEY). Set VIDEOFORGE_VIDEOGEN_MODEL to a fal
+    """fal.ai hosted models (FAL_KEY). Set DABWAYO_VIDEOGEN_MODEL to a fal
     model id, e.g. 'fal-ai/ltx-video'."""
 
     name = "fal"
@@ -224,7 +224,7 @@ class FalProvider(VideoGenProvider):
 
     def __init__(self, key: Optional[str] = None, model: Optional[str] = None):
         self.key = key or os.environ.get("FAL_KEY", "")
-        self.model = model or os.environ.get("VIDEOFORGE_VIDEOGEN_MODEL", self.DEFAULT_MODEL)
+        self.model = model or os.environ.get("DABWAYO_VIDEOGEN_MODEL", self.DEFAULT_MODEL)
 
     def available(self) -> tuple[bool, str]:
         if not self.key:

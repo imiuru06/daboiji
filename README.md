@@ -1,4 +1,4 @@
-# VideoForge
+# 다봐요 (Dabwayo)
 
 A modular, scriptable **video rendering engine** with a first-class **MCP
 interface** so AI agents can author and render high-quality video from plain
@@ -8,7 +8,7 @@ and audio — all serializable and driven by tools.
 
 ```
                  ┌────────────────────────────────────────────┐
-   agent ──MCP──▶│  videoforge.mcp_server  (FastMCP, 16 tools) │
+   agent ──MCP──▶│  dabwayo.mcp_server  (FastMCP, 16 tools) │
                  └───────────────┬────────────────────────────┘
                                  ▼
         Project (JSON spec) ─▶ Timeline ─▶ Render engine ─▶ H.264 MP4
@@ -35,8 +35,8 @@ pip install -r requirements.txt      # numpy, Pillow, imageio[-ffmpeg], mcp
 
 ## Quick start (Python)
 ```python
-import videoforge as vf
-from videoforge import keyframes as K
+import dabwayo as vf
+from dabwayo import keyframes as K
 
 p = vf.Project(1920, 1080, fps=30, background="#0b0e16")
 bg = p.track("video", "bg")
@@ -55,23 +55,23 @@ p.render("output/hello.mp4")
 
 ## Quick start (declarative JSON)
 ```python
-import json, videoforge as vf
+import json, dabwayo as vf
 spec = json.load(open("examples/quickstart_spec.json"))
 vf.render(vf.Timeline.from_spec(spec), "output/quickstart.mp4")
 ```
 
 ## Run as an MCP server
 ```bash
-python -m videoforge.mcp_server          # stdio transport
+python -m dabwayo.mcp_server          # stdio transport
 # or the installed entry point:
-videoforge-mcp
+dabwayo-mcp
 ```
 
 Register it with any MCP client (e.g. Claude):
 ```json
 {
   "mcpServers": {
-    "videoforge": { "command": "python", "args": ["-m", "videoforge.mcp_server"] }
+    "dabwayo": { "command": "python", "args": ["-m", "dabwayo.mcp_server"] }
   }
 }
 ```
@@ -104,27 +104,27 @@ The backend is pluggable (`list_video_providers` shows what's ready):
 | Provider | Needs | Notes |
 |----------|-------|-------|
 | `local` | nothing | Procedural fallback — abstract, **not** photoreal, but always works offline |
-| `remote` | `VIDEOFORGE_VIDEOGEN_URL` | A **Google Colab free-GPU** server (or any HTTP/GPU box) running LTX-Video |
+| `remote` | `DABWAYO_VIDEOGEN_URL` | A **Google Colab free-GPU** server (or any HTTP/GPU box) running LTX-Video |
 | `replicate` | `REPLICATE_API_TOKEN` | Hosted open models, pay-per-use |
 | `fal` | `FAL_KEY` | Hosted, pay-per-use |
 | `huggingface` | `HF_TOKEN` | Free tier, t2v, modest quality |
 
-Selection is automatic (`VIDEOFORGE_VIDEOGEN_URL` → `remote`; else a hosted key;
-else `local`), or force it with `VIDEOFORGE_VIDEOGEN_PROVIDER` / `provider=`.
+Selection is automatic (`DABWAYO_VIDEOGEN_URL` → `remote`; else a hosted key;
+else `local`), or force it with `DABWAYO_VIDEOGEN_PROVIDER` / `provider=`.
 
 ```python
-from videoforge import generate_video
+from dabwayo import generate_video
 shot = generate_video("a slow drone shot over a misty forest at dawn",
                       duration=4, out_path="output/shot.mp4")   # -> GenResult(path=...)
 ```
 
 ### Free photoreal via Google Colab
-1. Open **`colab/videoforge_gpu_server.ipynb`** in Colab, set Runtime → **GPU (T4)**, Run all.
+1. Open **`colab/dabwayo_gpu_server.ipynb`** in Colab, set Runtime → **GPU (T4)**, Run all.
 2. It loads LTX-Video and prints a public URL.
-3. Point VideoForge at it and generate real footage with the same tool:
+3. Point Dabwayo at it and generate real footage with the same tool:
 ```bash
-export VIDEOFORGE_VIDEOGEN_URL='https://xxxx.trycloudflare.com'
-export VIDEOFORGE_VIDEOGEN_PROVIDER=remote
+export DABWAYO_VIDEOGEN_URL='https://xxxx.trycloudflare.com'
+export DABWAYO_VIDEOGEN_PROVIDER=remote
 ```
 The Colab server speaks a tiny contract (`GET /health`, `POST /generate` →
 `video/mp4`), so any GPU box implementing it works as a drop-in backend.
@@ -145,7 +145,7 @@ and `Project.load(path)` / `p.save(path)` round-trip it for external edits.
 ## Studio UI + Claude Code (shared backend)
 A human in a browser and an agent (Claude Code over MCP) can drive the **same
 projects at the same time**. Both front-ends call the same operations and
-share one on-disk store (`videoforge.service.STORE`), so each sees the
+share one on-disk store (`dabwayo.service.STORE`), so each sees the
 other's edits.
 
 ```
@@ -156,11 +156,11 @@ other's edits.
 
 ```bash
 # 1) start the Studio (serves UI + REST on :8080)
-VIDEOFORGE_STORE=.vf_projects python -m videoforge.studio.server
+DABWAYO_STORE=.vf_projects python -m dabwayo.studio.server
 # open http://localhost:8080
 ```
-The repo ships a `.mcp.json` pointing Claude Code's `videoforge` MCP server at
-the **same** `VIDEOFORGE_STORE`, so anything the agent creates/edits over MCP
+The repo ships a `.mcp.json` pointing Claude Code's `dabwayo` MCP server at
+the **same** `DABWAYO_STORE`, so anything the agent creates/edits over MCP
 shows up live in the UI (it polls every few seconds) and vice-versa. The UI
 lets you create projects, add backgrounds/text/callouts/effects, scrub a
 live preview frame, edit or delete a selected clip, edit the raw JSON spec,
@@ -171,12 +171,12 @@ The MCP server is **provider-neutral** — any MCP client drives the same tools
 on the same shared store. Drop-in config templates live in
 [`examples/mcp-clients/`](examples/mcp-clients/): GitHub Copilot (VS Code agent
 mode, `.vscode/mcp.json`), opencode (`opencode.json`), Cline/Cursor/Windsurf
-(`mcpServers`). Point every client at the same `VIDEOFORGE_STORE` and they
+(`mcpServers`). Point every client at the same `DABWAYO_STORE` and they
 collaborate with the Studio UI and Claude Code on one project.
 
 #### In-app AI editing (chat → edit → preview) — itself an MCP client
 The Studio's chat panel is **not** a bespoke function-caller: it connects to
-the VideoForge MCP server as a client (exactly like the agents above),
+the Dabwayo MCP server as a client (exactly like the agents above),
 discovers the tools via `list_tools`, and executes them via `call_tool`. The
 LLM is only the brain that picks tools; the single source of truth is the MCP
 server, so any tool added there appears in the chat automatically and edits go
@@ -186,10 +186,10 @@ through the same shared store. The LLM brain is pluggable:
 pip install '.[ai]'        && export ANTHROPIC_API_KEY=sk-ant-...
 # or any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama, opencode, …)
 pip install '.[ai-openai]' && export OPENAI_API_KEY=...  \
-    OPENAI_BASE_URL=https://api.openai.com/v1  VIDEOFORGE_LLM_MODEL=gpt-4o
-python -m videoforge.studio.server     # chip shows the active provider/model
+    OPENAI_BASE_URL=https://api.openai.com/v1  DABWAYO_LLM_MODEL=gpt-4o
+python -m dabwayo.studio.server     # chip shows the active provider/model
 ```
-Provider is chosen by `VIDEOFORGE_LLM_PROVIDER` (else auto-detected from the
+Provider is chosen by `DABWAYO_LLM_PROVIDER` (else auto-detected from the
 key present). The chat tools are thin wrappers over the same MCP functions, so
 the agent's edits interoperate with everything above. The UI also has **undo**
 (↶) — edits and chat turns are snapshotted server-side.
@@ -240,7 +240,7 @@ spec: `{"shape":"rect|ellipse|polygon", "rect":[x,y,w,h], "feather":px}`.
 
 ## Layout
 ```
-videoforge/
+dabwayo/
   core/        types, color, easing, keyframes, transform, timeline
   elements/    backgrounds, text, media (image/video), shapes  (+registry)
   effects/     color grade, stylize (glow/blur/grain/…), lighting (+registry)
@@ -258,7 +258,7 @@ tests/         test_engine.py
 Add an effect in ~10 lines — it auto-registers and is immediately available
 to the builder, the JSON spec and the MCP tools:
 ```python
-from videoforge.effects.base import Effect, register
+from dabwayo.effects.base import Effect, register
 
 @register("invert")
 class Invert(Effect):

@@ -1,7 +1,7 @@
 """In-app editing chat — implemented as an MCP client.
 
 The integration model is MCP-first: the chat does not call engine functions
-directly, it connects to the VideoForge **MCP server** as a client (the same
+directly, it connects to the Dabwayo **MCP server** as a client (the same
 way GitHub Copilot, opencode, Cline or Claude Code would), discovers the tools
 via ``list_tools``, and executes them via ``call_tool``. The LLM is only the
 "brain" that decides which MCP tools to call; the single source of truth for
@@ -36,7 +36,7 @@ _STATE: Dict[str, dict] = {}
 
 
 # --------------------------------------------------------------------------
-# MCP client host — one persistent stdio connection to the VideoForge server,
+# MCP client host — one persistent stdio connection to the Dabwayo server,
 # driven from a background asyncio loop so the sync HTTP server can use it.
 # --------------------------------------------------------------------------
 class MCPHost:
@@ -72,8 +72,8 @@ class MCPHost:
         from mcp.client.stdio import stdio_client
 
         params = StdioServerParameters(
-            command=sys.executable, args=["-m", "videoforge.mcp_server"],
-            env=dict(os.environ),    # inherits VIDEOFORGE_STORE/_OUTPUT -> shared store
+            command=sys.executable, args=["-m", "dabwayo.mcp_server"],
+            env=dict(os.environ),    # inherits DABWAYO_STORE/_OUTPUT -> shared store
         )
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:
@@ -134,7 +134,7 @@ atexit.register(_HOST.shutdown)
 # Provider selection (the LLM "brain")
 # --------------------------------------------------------------------------
 def _provider() -> str:
-    p = os.environ.get("VIDEOFORGE_LLM_PROVIDER", "").lower()
+    p = os.environ.get("DABWAYO_LLM_PROVIDER", "").lower()
     if p in ("anthropic", "openai"):
         return p
     if os.environ.get("ANTHROPIC_API_KEY"):
@@ -146,8 +146,8 @@ def _provider() -> str:
 
 def _model(provider: str) -> str:
     if provider == "anthropic":
-        return os.environ.get("VIDEOFORGE_LLM_MODEL", ANTHROPIC_MODEL)
-    return os.environ.get("VIDEOFORGE_LLM_MODEL", "gpt-4o")
+        return os.environ.get("DABWAYO_LLM_MODEL", ANTHROPIC_MODEL)
+    return os.environ.get("DABWAYO_LLM_MODEL", "gpt-4o")
 
 
 def status() -> dict:
@@ -159,7 +159,7 @@ def status() -> dict:
     if not provider:
         return {**base, "available": False, "provider": None,
                 "hint": "Set ANTHROPIC_API_KEY (Claude) or OPENAI_API_KEY + "
-                        "OPENAI_BASE_URL/VIDEOFORGE_LLM_MODEL (OpenAI-compatible)."}
+                        "OPENAI_BASE_URL/DABWAYO_LLM_MODEL (OpenAI-compatible)."}
     try:
         __import__("anthropic" if provider == "anthropic" else "openai")
     except ImportError:
@@ -177,7 +177,7 @@ def _system(pid: str) -> str:
     caps = engine_capabilities()
     spec = json.loads(_HOST.call("get_project", {}, pid))
     return (
-        "You are VideoForge's in-app editing assistant. You edit the user's video "
+        "You are Dabwayo's in-app editing assistant. You edit the user's video "
         "project by calling MCP tools — each runs the real engine and the result "
         "appears in the preview immediately. The project_id is supplied for you; "
         "never ask for it.\n"

@@ -1,13 +1,13 @@
-"""VideoForge Studio server.
+"""Dabwayo Studio server.
 
 A small, dependency-free HTTP server that serves the Studio web UI and a REST
 API. The API is a thin wrapper over the *same* functions the MCP server
-exposes (``videoforge.mcp_server``), and both share the on-disk project store
-(``videoforge.service.STORE``). So a human in the browser and an agent such as
+exposes (``dabwayo.mcp_server``), and both share the on-disk project store
+(``dabwayo.service.STORE``). So a human in the browser and an agent such as
 Claude Code (over MCP) edit the same projects and see each other's changes.
 
-Run:  python -m videoforge.studio.server   [--port 8080]
-Point Claude Code's MCP server at the same VIDEOFORGE_STORE to collaborate.
+Run:  python -m dabwayo.studio.server   [--port 8080]
+Point Claude Code's MCP server at the same DABWAYO_STORE to collaborate.
 """
 from __future__ import annotations
 
@@ -272,12 +272,12 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=int(os.environ.get("VIDEOFORGE_PORT", 8080)))
+    ap.add_argument("--port", type=int, default=int(os.environ.get("DABWAYO_PORT", 8080)))
     ap.add_argument("--host", default="0.0.0.0")
     args = ap.parse_args()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"VideoForge Studio on http://{args.host}:{args.port}")
+    print(f"Dabwayo Studio on http://{args.host}:{args.port}")
     print(f"  store : {STORE.root}")
     print(f"  output: {OUTPUT_DIR}")
     srv.serve_forever()

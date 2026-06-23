@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "videoforge": {
+    "dabwayo": {
       "command": "python",
-      "args": ["-m", "videoforge.mcp_server"],
+      "args": ["-m", "dabwayo.mcp_server"],
       "env": {
         "PYTHONPATH": ".",
-        "VIDEOFORGE_STORE": ".vf_projects",
-        "VIDEOFORGE_OUTPUT": "output"
+        "DABWAYO_STORE": ".vf_projects",
+        "DABWAYO_OUTPUT": "output"
       }
     }
   }

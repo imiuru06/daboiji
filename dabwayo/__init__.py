@@ -1,15 +1,15 @@
-"""VideoForge — a modular, scriptable video rendering engine with an MCP API.
+"""Dabwayo — a modular, scriptable video rendering engine with an MCP API.
 
 Quick start
 -----------
->>> from videoforge import Project
+>>> from dabwayo import Project
 >>> p = Project(1280, 720, fps=30, background="#0b0e16")
 >>> t = p.track("video")
 >>> t.add(Project.text("Hello", size=120), start=0, duration=3).transition_in("fade")
 >>> p.render("out.mp4")
 
 Everything is driven by a plain JSON spec, so projects are serializable and
-editable by other tools/agents (see ``videoforge.mcp_server``).
+editable by other tools/agents (see ``dabwayo.mcp_server``).
 """
 from __future__ import annotations
 

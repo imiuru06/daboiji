@@ -1,7 +1,7 @@
 """Provider selection.
 
-Default behaviour (``VIDEOFORGE_VIDEOGEN_PROVIDER`` unset or ``auto``):
-  1. if ``VIDEOFORGE_VIDEOGEN_URL`` is set     -> remote (Colab / GPU server)
+Default behaviour (``DABWAYO_VIDEOGEN_PROVIDER`` unset or ``auto``):
+  1. if ``DABWAYO_VIDEOGEN_URL`` is set     -> remote (Colab / GPU server)
   2. else first hosted provider whose key is set (replicate/fal/huggingface)
   3. else ``local`` (always available, procedural)
 
@@ -38,11 +38,11 @@ def _make(name: str) -> VideoGenProvider:
 
 def get_provider(name: Optional[str] = None) -> VideoGenProvider:
     """Resolve a provider instance from an explicit name, the
-    ``VIDEOFORGE_VIDEOGEN_PROVIDER`` env var, or auto-detection."""
-    choice = (name or os.environ.get("VIDEOFORGE_VIDEOGEN_PROVIDER", "auto")).lower()
+    ``DABWAYO_VIDEOGEN_PROVIDER`` env var, or auto-detection."""
+    choice = (name or os.environ.get("DABWAYO_VIDEOGEN_PROVIDER", "auto")).lower()
     if choice != "auto":
         return _make(choice)
-    if os.environ.get("VIDEOFORGE_VIDEOGEN_URL"):
+    if os.environ.get("DABWAYO_VIDEOGEN_URL"):
         return _make("remote")
     for hosted in _AUTO_HOSTED:
         if _make(hosted).available()[0]:
@@ -59,6 +59,6 @@ def list_providers() -> dict:
     active = get_provider()
     return {"active": active.name, "providers": out,
             "configure": {
-                "env": "VIDEOFORGE_VIDEOGEN_PROVIDER (auto|local|remote|replicate|fal|huggingface)",
-                "remote_url": "VIDEOFORGE_VIDEOGEN_URL (Colab/GPU server)",
-                "colab_notebook": "colab/videoforge_gpu_server.ipynb"}}
+                "env": "DABWAYO_VIDEOGEN_PROVIDER (auto|local|remote|replicate|fal|huggingface)",
+                "remote_url": "DABWAYO_VIDEOGEN_URL (Colab/GPU server)",
+                "colab_notebook": "colab/dabwayo_gpu_server.ipynb"}}

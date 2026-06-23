@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import os
 
-import videoforge as vf
-from videoforge import keyframes as K
+import dabwayo as vf
+from dabwayo import keyframes as K
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -29,7 +29,7 @@ PAPER = "#eaf2ff"
 
 
 def build() -> vf.Project:
-    p = vf.Project(W, H, fps=30, background=INK, name="VideoForge Showcase")
+    p = vf.Project(W, H, fps=30, background=INK, name="Dabwayo Showcase")
 
     bg = p.track("video", "bg")
     mid = p.track("video", "mid")
@@ -58,7 +58,7 @@ def build() -> vf.Project:
         .transition_out("fade", 0.5))
 
     # title — kinetic, scales down into place
-    (fg.add(vf.Project.text("VIDEOFORGE", size=150, font="display", color=PAPER,
+    (fg.add(vf.Project.text("DABWAYO", size=150, font="display", color=PAPER,
                             letter_spacing=8), 1.0, 4.2)
         .position([CX, CY + 130])
         .scale(K((1.0, 1.18), (1.9, 1.0, "ease_out_cubic"), default=1.18))

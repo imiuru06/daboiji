@@ -1,4 +1,4 @@
-"""VideoForge MCP server.
+"""Dabwayo MCP server.
 
 Exposes the rendering engine as MCP tools so other agents can author and
 render video declaratively. Two complementary styles are supported:
@@ -8,7 +8,7 @@ render video declaratively. Two complementary styles are supported:
 * Stateless — ``render_from_spec`` renders a complete JSON project in one
   call (ideal when an agent assembles the whole spec itself).
 
-Run:  python -m videoforge.mcp_server         (stdio transport)
+Run:  python -m dabwayo.mcp_server         (stdio transport)
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from .render.engine import render, render_thumbnail
 from .core.timeline import Timeline
 from .service import OUTPUT_DIR as _OUTPUT_DIR, STORE as _PROJECTS
 
-mcp = FastMCP("videoforge")
+mcp = FastMCP("dabwayo")
 
 
 def _proj(project_id: str) -> dict:
@@ -247,7 +247,7 @@ def generate_video(project_id: str, prompt: str, mode: str = "t2v",
     guided by ``prompt``. The backend is chosen by list_video_providers()'s
     'active' entry unless ``provider`` is given (local|remote|replicate|fal|
     huggingface). 'local' needs no GPU/key (abstract, not photoreal); 'remote'
-    targets a Google Colab GPU server (set VIDEOFORGE_VIDEOGEN_URL). If
+    targets a Google Colab GPU server (set DABWAYO_VIDEOGEN_URL). If
     ``add_to_timeline`` is false, only the asset is produced.
     """
     from .generation import generate_video as _gen
@@ -520,7 +520,7 @@ def render_from_spec(spec: dict, out_path: Optional[str] = None,
             "bytes": os.path.getsize(out_path)}
 
 
-_HELP = """VideoForge authoring guide
+_HELP = """Dabwayo authoring guide
 ==========================
 Coordinate system: pixels, origin top-left, +x right, +y down.
 A project = tracks (composited bottom->top) of clips placed at absolute

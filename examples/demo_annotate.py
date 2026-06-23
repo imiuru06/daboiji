@@ -14,8 +14,8 @@ import os
 import numpy as np
 from PIL import Image
 
-import videoforge as vf
-from videoforge import keyframes as K
+import dabwayo as vf
+from dabwayo import keyframes as K
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "output", "dewatermarked_lama.mp4")

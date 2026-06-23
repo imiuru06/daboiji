@@ -1,4 +1,4 @@
-"""Smoke and unit tests for the VideoForge engine.
+"""Smoke and unit tests for the Dabwayo engine.
 
 Run: PYTHONPATH=. python -m pytest tests/ -q   (or: python tests/test_engine.py)
 """
@@ -14,11 +14,11 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import videoforge as vf
-from videoforge.core import easing
-from videoforge.core.keyframe import AnimatedProperty
-from videoforge.core.types import Color
-from videoforge.render.encoder import ffmpeg_exe
+import dabwayo as vf
+from dabwayo.core import easing
+from dabwayo.core.keyframe import AnimatedProperty
+from dabwayo.core.types import Color
+from dabwayo.render.encoder import ffmpeg_exe
 
 
 def test_color_parse():
@@ -81,7 +81,7 @@ def test_new_effects_registered():
 
 
 def test_callout_renders_with_tail():
-    from videoforge.elements.annotations import Callout
+    from dabwayo.elements.annotations import Callout
     ctx = vf.RenderContext(640, 360, 24)
     el = Callout(text="안녕 hello", font="kr", tail_side="bottom")
     w, h = el.natural_size(ctx)
@@ -91,7 +91,7 @@ def test_callout_renders_with_tail():
 
 
 def test_chroma_key_makes_transparent():
-    from videoforge.effects.keying import ChromaKey
+    from dabwayo.effects.keying import ChromaKey
     img = np.zeros((4, 4, 4), np.float32)
     img[..., 1] = 1.0  # pure green
     img[..., 3] = 1.0
@@ -101,7 +101,7 @@ def test_chroma_key_makes_transparent():
 
 
 def test_mosaic_region_and_inpaint_run():
-    from videoforge.effects.censor import Inpaint, Mosaic
+    from dabwayo.effects.censor import Inpaint, Mosaic
     ctx = vf.RenderContext(64, 64, 1)
     img = np.random.default_rng(0).random((64, 64, 4)).astype(np.float32)
     img[..., 3] = 1.0
@@ -112,7 +112,7 @@ def test_mosaic_region_and_inpaint_run():
 
 
 def test_camera_parallax_shifts_position():
-    from videoforge.core.camera import Camera, apply_camera
+    from dabwayo.core.camera import Camera, apply_camera
     cam = Camera.from_spec({"pan": [100, 0], "zoom": 1.0})
     s = cam.sample(0.0, 1000, 1000)
     base = {"position": (500, 500), "scale": (1, 1), "rotation": 0, "opacity": 1,
@@ -123,7 +123,7 @@ def test_camera_parallax_shifts_position():
 
 
 def test_update_clip_partial_edit():
-    from videoforge import mcp_server as M
+    from dabwayo import mcp_server as M
     pid = "edit_test"
     M._PROJECTS[pid] = {
         "width": 160, "height": 90, "fps": 10, "background": "#000",

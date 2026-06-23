@@ -7,7 +7,7 @@ each operation loads the current state, mutates and saves, so the two
 front-ends stay in sync (last writer wins).
 
 The store root and the render-output dir are configurable via the
-``VIDEOFORGE_STORE`` / ``VIDEOFORGE_OUTPUT`` environment variables, so the
+``DABWAYO_STORE`` / ``DABWAYO_OUTPUT`` environment variables, so the
 MCP process and the Studio process can be pointed at the same place.
 """
 from __future__ import annotations
@@ -51,5 +51,5 @@ class ProjectStore:
             os.remove(self._path(pid))
 
 
-STORE = ProjectStore(os.environ.get("VIDEOFORGE_STORE", os.path.abspath(".vf_projects")))
-OUTPUT_DIR = os.environ.get("VIDEOFORGE_OUTPUT", os.path.abspath("output"))
+STORE = ProjectStore(os.environ.get("DABWAYO_STORE", os.path.abspath(".vf_projects")))
+OUTPUT_DIR = os.environ.get("DABWAYO_OUTPUT", os.path.abspath("output"))
