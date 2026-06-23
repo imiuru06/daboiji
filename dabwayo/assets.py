@@ -137,6 +137,21 @@ def link_project(aid: str, pid: str) -> dict:
     return rec
 
 
+def prune() -> list[str]:
+    """Drop asset records whose underlying file no longer exists. Returns the
+    removed ids (housekeeping for the store)."""
+    removed = []
+    for aid in ids():
+        try:
+            rec = get(aid)
+        except Exception:  # noqa: BLE001
+            continue
+        if not os.path.isfile(rec.get("path", "")):
+            os.remove(_rec_path(aid))
+            removed.append(aid)
+    return removed
+
+
 def lineage(aid: str) -> list[dict]:
     """Walk the provenance chain from this asset back to its root ancestor."""
     chain, seen = [], set()

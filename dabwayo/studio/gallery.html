@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>다봐요 Gallery</title>
+<style>
+  :root{--bg:#0a0d14;--panel:#121726;--panel2:#0e1320;--line:#222a3d;--ink:#e8eefc;
+        --mut:#8aa0c8;--acc:#5cc8ff;--ok:#54e0b0;--warn:#ffcf6b;}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);
+         background:linear-gradient(180deg,#121726,#0c1018);position:sticky;top:0;z-index:5}
+  header h1{font-size:16px;margin:0}.dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok)}
+  header .sp{margin-left:auto;color:var(--mut);font-size:12px}a{color:var(--acc);text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);margin:24px 0 12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .card h3{margin:0 0 4px;font-size:14px;word-break:break-all}
+  .meta{font-size:11px;color:var(--mut)}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:#15203a;color:var(--acc);border:1px solid var(--line);margin:2px 4px 2px 0}
+  .tag.ok{color:var(--ok)} .tag.warn{color:var(--warn)}
+  code{font-family:ui-monospace,monospace;font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:#cfe6ff}
+  button{background:#15203a;color:var(--acc);border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer;font:inherit}
+  img.prev{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:8px;display:none}
+  .muted{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot"></span><h1>다봐요 — 갤러리</h1>
+  <span class="sp"><a href="/">편집기</a> · <a href="/dashboard">대시보드</a> · <span id="ts"></span></span>
+</header>
+<div class="wrap">
+  <div class="muted" id="counts"></div>
+  <h2>프로젝트</h2>
+  <div class="grid" id="projects"></div>
+  <h2>에셋 (미디어 + 계보)</h2>
+  <div class="grid" id="assets"></div>
+</div>
+<script>
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function load(){
+  const idx=await (await fetch('/api/index')).json();
+  document.getElementById('ts').textContent=new Date().toLocaleTimeString();
+  document.getElementById('counts').textContent=`프로젝트 ${idx.counts.projects} · 에셋 ${idx.counts.assets} · ${esc(idx.store_root)}`;
+
+  document.getElementById('projects').innerHTML = idx.projects.length ? idx.projects.map(p=>`
+    <div class="card">
+      <h3>${esc(p.name)}</h3>
+      <div class="meta">${(p.resolution||[]).join('×')} · ${esc(p.fps)}fps · 트랙 ${esc(p.tracks)}</div>
+      <div class="meta">id: <code>${esc(p.id)}</code></div>
+      <div style="margin-top:8px"><button onclick="prev('${esc(p.id)}',this)">프리뷰</button></div>
+      <img class="prev" id="pv_${esc(p.id)}"/>
+    </div>`).join('') : '<div class="muted">프로젝트 없음</div>';
+
+  const byId=Object.fromEntries(idx.assets.map(a=>[a.id,a]));
+  const chain=a=>{const o=[];let x=a,s=new Set();while(x&&!s.has(x.id)){s.add(x.id);o.unshift(x.id);x=byId[x.parent];}return o;};
+  document.getElementById('assets').innerHTML = idx.assets.length ? idx.assets.map(a=>`
+    <div class="card">
+      <h3>${esc(a.id)}</h3>
+      <div><span class="tag ok">${esc(a.role)}</span><span class="tag">${esc(a.kind)}</span></div>
+      <div class="meta" style="margin-top:6px">provider: ${esc(a.provider||'—')}${a.duration?' · '+esc(a.duration)+'s':''}</div>
+      <div class="meta">계보: <code>${chain(a).join(' ▶ ')}</code></div>
+      <div class="meta">${esc(a.created||'')}</div>
+    </div>`).join('') : '<div class="muted">아직 등록된 에셋 없음 — generate_video / remove_watermark 가 자동 등록</div>';
+}
+async function prev(pid,btn){
+  btn.textContent='로딩…';
+  const img=document.getElementById('pv_'+pid);
+  img.src='/api/projects/'+pid+'/preview?t=1.0&'+Date.now();
+  img.style.display='block'; btn.textContent='프리뷰';
+}
+load(); setInterval(load,8000);
+</script>
+</body>
+</html>

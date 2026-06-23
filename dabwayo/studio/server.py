@@ -272,6 +272,9 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/dashboard", "/dashboard.html"):
             with open(os.path.join(HERE, "dashboard.html"), "rb") as f:
                 return self._send(200, f.read(), "text/html; charset=utf-8")
+        if path in ("/gallery", "/gallery.html"):
+            with open(os.path.join(HERE, "gallery.html"), "rb") as f:
+                return self._send(200, f.read(), "text/html; charset=utf-8")
         if path.startswith("/files/"):
             name = os.path.basename(path[len("/files/"):])
             fp = os.path.join(OUTPUT_DIR, name)
