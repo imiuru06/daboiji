@@ -92,6 +92,42 @@ Register it with any MCP client (e.g. Claude):
 | `list_clips` · `update_clip` · `remove_clip` · `move_clip` | Edit one clip in place |
 | `preview_frame` · `render_range` | Single-frame / time-window preview |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
+| `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
+
+## Generative video (text→video / image→video)
+`generate_video` turns a prompt (t2v) or a still image (i2v) into a short MP4
+that composites onto the timeline like any other `video` clip — so AI footage
+sits under your text, effects, camera moves and audio.
+
+The backend is pluggable (`list_video_providers` shows what's ready):
+
+| Provider | Needs | Notes |
+|----------|-------|-------|
+| `local` | nothing | Procedural fallback — abstract, **not** photoreal, but always works offline |
+| `remote` | `VIDEOFORGE_VIDEOGEN_URL` | A **Google Colab free-GPU** server (or any HTTP/GPU box) running LTX-Video |
+| `replicate` | `REPLICATE_API_TOKEN` | Hosted open models, pay-per-use |
+| `fal` | `FAL_KEY` | Hosted, pay-per-use |
+| `huggingface` | `HF_TOKEN` | Free tier, t2v, modest quality |
+
+Selection is automatic (`VIDEOFORGE_VIDEOGEN_URL` → `remote`; else a hosted key;
+else `local`), or force it with `VIDEOFORGE_VIDEOGEN_PROVIDER` / `provider=`.
+
+```python
+from videoforge import generate_video
+shot = generate_video("a slow drone shot over a misty forest at dawn",
+                      duration=4, out_path="output/shot.mp4")   # -> GenResult(path=...)
+```
+
+### Free photoreal via Google Colab
+1. Open **`colab/videoforge_gpu_server.ipynb`** in Colab, set Runtime → **GPU (T4)**, Run all.
+2. It loads LTX-Video and prints a public URL.
+3. Point VideoForge at it and generate real footage with the same tool:
+```bash
+export VIDEOFORGE_VIDEOGEN_URL='https://xxxx.trycloudflare.com'
+export VIDEOFORGE_VIDEOGEN_PROVIDER=remote
+```
+The Colab server speaks a tiny contract (`GET /health`, `POST /generate` →
+`video/mp4`), so any GPU box implementing it works as a drop-in backend.
 
 ### Editing only part of a project
 Because the project is a JSON tree, you edit a single clip without touching

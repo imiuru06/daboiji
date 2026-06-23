@@ -22,6 +22,7 @@ from .core import (  # noqa: F401
 )
 from .render.context import RenderContext  # noqa: F401
 from .render.engine import RenderResult, render, render_frame, render_thumbnail  # noqa: F401
+from .generation import generate_video, list_providers as list_video_providers  # noqa: F401
 
 __version__ = "0.1.0"
 
@@ -32,6 +33,7 @@ def capabilities() -> dict:
     from .elements.base import available_types
     from .transitions.base import available as tr_available
     from .core.easing import REGISTRY as easings
+    from .generation.registry import list_providers as _gen_providers
     return {
         "version": __version__,
         "elements": available_types(),
@@ -40,6 +42,7 @@ def capabilities() -> dict:
         "blend_modes": [m.value for m in BlendMode],
         "easings": sorted(easings),
         "anchors": [a.value for a in Anchor],
+        "generators": _gen_providers(),
     }
 
 
@@ -48,5 +51,6 @@ __all__ = [
     "Color", "Anchor", "BlendMode", "Direction", "FitMode",
     "AnimatedProperty", "Keyframe", "render", "render_frame",
     "render_thumbnail", "RenderResult", "RenderContext", "capabilities",
+    "generate_video", "list_video_providers",
     "__version__",
 ]
