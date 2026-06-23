@@ -173,6 +173,32 @@ def _put(h, m, body):
     return 200, M.update_project(m.group(1), body["spec"]), None
 
 
+@route("POST", r"/api/projects/([0-9a-f]+)/rename")
+def _rename_project(h, m, body):
+    pid = m.group(1)
+    spec = STORE[pid]
+    spec["name"] = (body.get("name") or spec.get("name") or "untitled").strip()
+    STORE[pid] = spec
+    return 200, {"ok": True, "name": spec["name"]}, None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/duplicate")
+def _duplicate_project(h, m, body):
+    spec = json.loads(json.dumps(STORE[m.group(1)]))   # deep copy
+    spec["name"] = (spec.get("name") or "untitled") + " 사본"
+    new_pid = uuid.uuid4().hex[:12]
+    STORE[new_pid] = spec
+    return 200, {"ok": True, "project_id": new_pid, "spec": spec}, None
+
+
+@route("DELETE", r"/api/projects/([0-9a-f]+)")
+def _delete_project(h, m, body):
+    pid = m.group(1)
+    STORE.delete(pid)
+    _UNDO.pop(pid, None)
+    return 200, {"ok": True}, None
+
+
 @route("POST", r"/api/projects/([0-9a-f]+)/undo")
 def _undo_route(h, m, body):
     ok = _undo(m.group(1))

@@ -93,6 +93,14 @@
   .stage .empty .big{font-size:15px;color:var(--mut);margin-bottom:6px}
   .badge{position:absolute;top:12px;left:12px;font-size:11px;color:var(--mut);
          background:rgba(8,11,17,.7);border:1px solid var(--line);padding:3px 9px;border-radius:20px}
+  #ovl{position:absolute;inset:0;pointer-events:none;z-index:4}
+  .handle{position:absolute;transform:translate(-50%,-50%);min-width:28px;height:28px;padding:0 6px;
+          border-radius:16px;background:rgba(92,200,255,.22);border:2px solid var(--acc);color:#dff3ff;
+          display:flex;align-items:center;justify-content:center;font-size:13px;cursor:grab;
+          pointer-events:auto;box-shadow:0 0 0 2px rgba(0,0,0,.35),0 2px 10px rgba(0,0,0,.4);user-select:none}
+  .handle:hover{background:rgba(92,200,255,.35)}
+  .handle:active{cursor:grabbing}
+  .handle .lbl{font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .transport{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line);
              background:var(--panel)}
   .transport .t{font-variant-numeric:tabular-nums;font-size:12px;color:var(--mut);min-width:74px}
@@ -150,6 +158,9 @@
   <span class="brand"><span class="dot"></span>다봐요 <b>Studio</b></span>
   <div class="hgroup proj">
     <select id="proj" style="flex:1"></select>
+    <button class="btn icon sm ghost" onclick="renameProject()" title="이름 변경">✎</button>
+    <button class="btn icon sm ghost" onclick="duplicateProject()" title="복제">⧉</button>
+    <button class="btn icon sm ghost" onclick="deleteProject()" title="삭제">🗑</button>
     <button class="btn icon sm ghost" onclick="refreshProjects()" title="새로고침">↻</button>
     <button class="btn sm" onclick="createProject()">+ 새 프로젝트</button>
   </div>
@@ -316,7 +327,7 @@ async function boot(){
   await refreshProjects();
   await loadAssets();
   chatStatus();
-  window.addEventListener('resize',updatePlayhead);
+  window.addEventListener('resize',()=>{updatePlayhead();drawHandle();});
   setInterval(()=>{if($('#live').checked&&PID&&!PLAYING)softRefresh();},2500);
 }
 async function refreshProjects(){
@@ -331,6 +342,28 @@ $('#proj').onchange=async e=>{if(e.target.value){PID=e.target.value;await loadPr
 async function createProject(){
   const r=await api('POST','/api/projects',{width:1280,height:720,fps:24,name:'studio-'+Date.now()%10000});
   await refreshProjects();PID=r.project_id;$('#proj').value=PID;await loadProject();toast('프로젝트 생성됨');
+}
+async function renameProject(){
+  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
+  const name=prompt('새 프로젝트 이름:',(SPEC&&SPEC.name)||'');
+  if(name==null||!name.trim())return;
+  await api('POST','/api/projects/'+PID+'/rename',{name:name.trim()});
+  await refreshProjects();$('#proj').value=PID;await loadProject();toast('이름 변경됨');
+}
+async function duplicateProject(){
+  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
+  const r=await api('POST','/api/projects/'+PID+'/duplicate',{});
+  await refreshProjects();PID=r.project_id;$('#proj').value=PID;await loadProject();toast('복제됨');
+}
+async function deleteProject(){
+  if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
+  if(!confirm('이 프로젝트를 삭제할까요?\n'+((SPEC&&SPEC.name)||PID)))return;
+  await api('DELETE','/api/projects/'+PID);PID=null;
+  await refreshProjects();
+  if(!PID){SPEC=null;SEL=null;
+    $('#stage').innerHTML='<div class="empty"><div class="big">프로젝트가 없습니다</div>+ 새 프로젝트로 시작하세요.</div>';
+    $('#timelineTracks').innerHTML='';$('#durlabel').textContent='';updatePlayhead();}
+  toast('삭제됨');
 }
 async function loadProject(){
   stopPlay();
@@ -382,12 +415,14 @@ function selectClip(track,index){
       <div><label>길이(s)</label><input id="eD" type="number" step="0.1" value="${clip.duration??0}"></div></div>
     <div class="row" style="margin-top:8px"><div><label>X</label><input id="eX" type="number" value="${pos[0]}"></div>
       <div><label>Y</label><input id="eY" type="number" value="${pos[1]}"></div></div>
+    ${['solid','gradient'].includes(el.type)?'':'<p class="hint" style="margin:8px 0 0">💡 미리보기 화면에서 <b>◯ 핸들을 드래그</b>해 위치를 옮길 수 있어요.</p>'}
     <div class="row" style="margin-top:12px">
       <button class="btn primary" style="flex:2" onclick="applyClip()">적용</button>
       <button class="btn danger" onclick="delClip()">삭제</button>
     </div>`;
   showTab('insp','props');
   renderTimeline(SPEC.tracks.map(t=>({track:t.name,clips:t.clips.map((c,i)=>({index:i,type:(c.element||{}).type,start:c.start,duration:c.duration,preview:(c.element||{}).text}))})));
+  drawHandle();
 }
 async function applyClip(){
   const patch={element:{}};
@@ -453,10 +488,69 @@ async function saveSpec(){
 }
 function onScrub(){stopPlay();$('#tlabel').textContent=(+$('#time').value).toFixed(1)+'s';
   clearTimeout(window._sc);window._sc=setTimeout(refreshPreview,160);updatePlayhead();}
+function ensureStage(){
+  if(!$('#frame')){$('#stage').innerHTML='<img id="frame"/><div id="ovl"></div><span class="badge" id="badge"></span>';}
+}
 function refreshPreview(){
-  if(!PID)return;const t=$('#time').value;
-  $('#stage').innerHTML=`<img src="/api/projects/${PID}/preview?t=${t}&_=${Date.now()}" onload="updatePlayhead()"/>`
-    +`<span class="badge">${(+t).toFixed(1)}s · 미리보기</span>`;
+  if(!PID)return;
+  ensureStage();const t=$('#time').value;const f=$('#frame');
+  f.onload=()=>{updatePlayhead();drawHandle();};
+  f.src=`/api/projects/${PID}/preview?t=${t}&_=${Date.now()}`;
+  $('#badge').textContent=(+t).toFixed(1)+'s · 미리보기';
+}
+// ---- drag-to-position: handle over the preview for the selected clip ----
+let DRAG=null;
+function selectedClip(){
+  if(!SEL||!SPEC)return null;
+  const tr=SPEC.tracks.find(t=>t.name===SEL.track);
+  return tr?(tr.clips[SEL.index]||null):null;
+}
+function clipPos(clip){
+  const p=clip&&clip.transform&&clip.transform.position;
+  if(p&&p.length===2&&p[0]!==''&&p[1]!=='')return [Number(p[0]),Number(p[1])];
+  return [(SPEC.width||1280)/2,(SPEC.height||720)/2];
+}
+function drawHandle(){
+  const ovl=$('#ovl');if(!ovl)return;
+  const clip=selectedClip(),f=$('#frame');
+  const type=clip&&(clip.element||{}).type;
+  if(!clip||!f||!SPEC||['solid','gradient'].includes(type)||type===undefined){ovl.innerHTML='';return;}
+  const r=f.getBoundingClientRect(),s=$('#stage').getBoundingClientRect();
+  if(!r.width){ovl.innerHTML='';return;}
+  const [x,y]=clipPos(clip);
+  const hx=(r.left-s.left)+x/(SPEC.width||1280)*r.width;
+  const hy=(r.top-s.top)+y/(SPEC.height||720)*r.height;
+  const txt=(clip.element||{}).text;
+  ovl.innerHTML=`<div class="handle" id="handle" style="left:${hx}px;top:${hy}px" title="드래그해서 위치 이동">✛${txt?`<span class="lbl">${String(txt).replace(/</g,'&lt;').slice(0,12)}</span>`:''}</div>`;
+  $('#handle').onmousedown=startDrag;
+}
+function hideHandle(){const o=$('#ovl');if(o)o.innerHTML='';}
+function startDrag(e){
+  e.preventDefault();if(!selectedClip())return;
+  DRAG={x:null,y:null};
+  window.addEventListener('mousemove',onDrag);
+  window.addEventListener('mouseup',endDrag);
+}
+function onDrag(e){
+  if(!DRAG)return;const f=$('#frame');if(!f)return;
+  const r=f.getBoundingClientRect(),s=$('#stage').getBoundingClientRect();
+  let x=Math.round((e.clientX-r.left)/r.width*(SPEC.width||1280));
+  let y=Math.round((e.clientY-r.top)/r.height*(SPEC.height||720));
+  x=Math.max(0,Math.min(SPEC.width||1280,x));y=Math.max(0,Math.min(SPEC.height||720,y));
+  DRAG.x=x;DRAG.y=y;
+  const h=$('#handle');
+  if(h){h.style.left=((r.left-s.left)+x/(SPEC.width||1280)*r.width)+'px';
+        h.style.top=((r.top-s.top)+y/(SPEC.height||720)*r.height)+'px';}
+  const X=$('#eX'),Y=$('#eY');if(X)X.value=x;if(Y)Y.value=y;
+  $('#badge').textContent=`위치 ${x}, ${y}`;
+}
+async function endDrag(){
+  window.removeEventListener('mousemove',onDrag);window.removeEventListener('mouseup',endDrag);
+  if(!DRAG||DRAG.x==null){DRAG=null;return;}
+  const x=DRAG.x,y=DRAG.y;DRAG=null;
+  try{await api('PATCH',`/api/projects/${PID}/clips/${SEL.track}/${SEL.index}`,{patch:{transform:{position:[x,y]}}});
+    await loadProject();selectClip(SEL.track,SEL.index);toast('위치 이동: '+x+', '+y);
+  }catch(err){toast('이동 오류: '+err.message);}
 }
 function updatePlayhead(){
   const ph=$('#playhead');if(!ph)return;
@@ -472,22 +566,20 @@ function updatePlayhead(){
 function playToggle(){
   if(PLAYING){stopPlay();return;}
   if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
-  PLAYING=true;$('#playBtn').textContent='⏸';
+  PLAYING=true;$('#playBtn').textContent='⏸';hideHandle();ensureStage();
   const step=0.2,max=parseFloat($('#time').max)||10;
   const tick=()=>{
     if(!PLAYING)return;
     let t=parseFloat($('#time').value)+step;if(t>max)t=0;
     $('#time').value=t;$('#tlabel').textContent=t.toFixed(1)+'s';
-    const img=new Image();
-    img.onload=()=>{if(!PLAYING)return;$('#stage').innerHTML='';$('#stage').appendChild(img);
-      const b=document.createElement('span');b.className='badge';b.textContent=t.toFixed(1)+'s · 재생';$('#stage').appendChild(b);
-      updatePlayhead();setTimeout(tick,30);};
-    img.onerror=()=>{if(PLAYING)setTimeout(tick,150);};
-    img.src=`/api/projects/${PID}/preview?t=${t}&_=${Date.now()}`;
+    const f=$('#frame');if(!f){PLAYING=false;return;}
+    f.onload=()=>{if(!PLAYING)return;$('#badge').textContent=t.toFixed(1)+'s · 재생';updatePlayhead();setTimeout(tick,30);};
+    f.onerror=()=>{if(PLAYING)setTimeout(tick,150);};
+    f.src=`/api/projects/${PID}/preview?t=${t}&_=${Date.now()}`;
   };
   tick();
 }
-function stopPlay(){PLAYING=false;const b=$('#playBtn');if(b)b.textContent='▶';}
+function stopPlay(){PLAYING=false;const b=$('#playBtn');if(b)b.textContent='▶';drawHandle();}
 async function doRender(){
   if(!PID){toast('프로젝트를 먼저 선택하세요');return;}
   stopPlay();
