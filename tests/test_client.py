@@ -62,6 +62,28 @@ def test_generate_includes_prompt_and_provider(monkeypatch):
     assert seen["provider"] == "remote"
 
 
+def test_generate_synchronous_returns_video_bytes(monkeypatch):
+    """The DABWAYO service answers POST /generate with the video itself."""
+    client = make_client()
+
+    def fake_request(method, url, *, body=None, raw=False, timeout=None):
+        return b"\x00\x00MP4DATA"
+
+    monkeypatch.setattr(client, "_request", fake_request)
+    job = client.generate("a red ball")
+    assert job.job_id is None
+    assert job.done
+    assert job.video_bytes == b"\x00\x00MP4DATA"
+
+
+def test_download_writes_inline_video_bytes(tmp_path):
+    client = make_client()
+    dest = tmp_path / "out.mp4"
+    job = Job(job_id=None, status="completed", video_bytes=b"VID")
+    client.download(job, str(dest))
+    assert dest.read_bytes() == b"VID"
+
+
 def test_wait_polls_until_done(monkeypatch):
     client = make_client()
     states = iter(

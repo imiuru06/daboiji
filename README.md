@@ -22,9 +22,10 @@ export DABWAYO_VIDEOGEN_PROVIDER=remote
 
 > **Network note (Claude Code on the web):** outbound access is governed by the
 > environment's network egress allowlist. To let this client reach the service,
-> add the service host (e.g. `oldest-hypothesis-have-oven.trycloudflare.com`)
-> to the environment's egress settings. Until then, `ping`/`generate` will
-> report the host as unreachable. See
+> add the service host (e.g. `*.trycloudflare.com`) to the environment's egress
+> settings. **Allowlist changes apply to *new* sessions only** — a running
+> container keeps the network policy it started with, so start a fresh session
+> after editing the allowlist. See
 > <https://code.claude.com/docs/en/claude-code-on-the-web>.
 
 ## Install
@@ -66,14 +67,29 @@ job = client.wait(job, on_progress=lambda j: print(j.status, j.progress))
 client.download(job, "cat.mp4")
 ```
 
+## Verified service contract
+
+Probed live against the deployed DABWAYO service (a FastAPI app — see `/docs`):
+
+| Endpoint        | Method | Notes                                                              |
+| --------------- | ------ | ----------------------------------------------------------------- |
+| `/health`       | GET    | `{"ok":true,"backend":"modelscope-1.7b","modes":["t2v"],"gpu":"Tesla T4"}` |
+| `/generate`     | POST   | **Synchronous** — returns the encoded video directly (no job id)  |
+
+There is **no status/polling endpoint**: generation is synchronous, so the
+client saves the bytes returned by `POST /generate` straight to disk. The
+async `wait`/`status` flow below is kept as a fallback for deployments that
+*do* hand back a job id.
+
 ## How it adapts to the service
 
 The exact REST paths can differ between deployments, so the client tries a set
 of conventional candidates and remembers the one that works:
 
-- **generate:** `POST /generate`, `/api/generate`, `/v1/generate`, `/videos`, …
-- **status:** `GET /status/{id}`, `/jobs/{id}`, `/result/{id}`, …
-- response fields are matched loosely (`job_id`/`id`/`task_id`,
+- **generate:** `POST /generate` (confirmed), `/api/generate`, `/v1/generate`, …
+- **status:** `GET /status/{id}`, `/jobs/{id}`, `/result/{id}`, … (fallback only)
+- a synchronous (binary) `/generate` response is written straight to the output
+  file; a JSON response is matched loosely (`job_id`/`id`/`task_id`,
   `video_url`/`url`/`output`, `status`/`state`, …).
 
 If you already know the endpoints, pass them explicitly:

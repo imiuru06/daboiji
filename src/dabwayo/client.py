@@ -1,16 +1,20 @@
 """HTTP client for the DABWAYO video-generation service.
 
-This client is written against a *conventional* asynchronous video-gen REST
-API — the common "submit a job, poll for status, download the result" shape:
+The deployed service (a FastAPI app, modelscope-1.7b text-to-video on a Tesla
+T4) is **synchronous**:
+
+    GET   {base}/health           -> {"ok": true, "backend": "...", ...}
+    POST  {base}/generate         -> binary video bytes (returned directly)
+
+There is no job/status endpoint, so :meth:`generate` saves the bytes it gets
+back straight away. For robustness across deployments the client also tolerates
+the *asynchronous* "submit a job, poll for status, download the result" shape:
 
     POST  {base}/generate         -> {"job_id": "...", "status": "queued"}
-    GET   {base}/status/{job_id}  -> {"status": "...", "progress": 0.5,
-                                      "video_url": "..."}
-    GET   {video_url}             -> binary video bytes
+    GET   {base}/status/{job_id}  -> {"status": "...", "video_url": "..."}
 
-Because the exact paths can vary between deployments, the endpoints are
-parameterised and the client can :meth:`discover` them against a live service.
-Only the Python standard library is used, so there is nothing to install.
+Because the exact paths can vary, the endpoints are parameterised. Only the
+Python standard library is used, so there is nothing to install.
 """
 
 from __future__ import annotations
@@ -61,17 +65,27 @@ _FAILED_STATES = {"failed", "error", "errored", "cancelled", "canceled"}
 
 @dataclass
 class Job:
-    """A handle to an in-flight or finished generation job."""
+    """A handle to an in-flight or finished generation job.
+
+    ``video_bytes`` is populated when the service is *synchronous* and returns
+    the encoded video straight from ``POST /generate`` (as the DABWAYO
+    modelscope service does) rather than a job id to poll.
+    """
 
     job_id: str | None
     status: str = "unknown"
     progress: float | None = None
     video_url: str | None = None
     raw: dict[str, Any] = field(default_factory=dict)
+    video_bytes: bytes | None = field(default=None, repr=False)
 
     @property
     def done(self) -> bool:
-        return self.status.lower() in _DONE_STATES or bool(self.video_url)
+        return (
+            self.status.lower() in _DONE_STATES
+            or bool(self.video_url)
+            or self.video_bytes is not None
+        )
 
     @property
     def failed(self) -> bool:
@@ -163,6 +177,7 @@ class VideoGenClient:
         try:
             with urllib.request.urlopen(req, timeout=timeout or self.config.timeout) as resp:
                 payload = resp.read()
+                content_type = resp.headers.get("Content-Type", "")
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:500]
             raise VideoGenError(f"{method} {url} -> HTTP {exc.code}: {detail}") from exc
@@ -173,6 +188,14 @@ class VideoGenClient:
             return payload
         if not payload:
             return {}
+        # A synchronous service answers POST /generate with the encoded video
+        # itself. Only attempt to decode JSON when it actually looks like JSON;
+        # otherwise hand the raw bytes back so the caller can save them.
+        if "json" not in content_type.lower():
+            try:
+                return json.loads(payload)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                return payload
         try:
             return json.loads(payload)
         except json.JSONDecodeError as exc:
@@ -223,6 +246,14 @@ class VideoGenClient:
                 continue
             # Remember the working path for subsequent calls.
             self.generate_path = path
+            # Synchronous service: the video bytes come straight back.
+            if isinstance(payload, (bytes, bytearray)):
+                return Job(
+                    job_id=None,
+                    status="completed",
+                    video_bytes=bytes(payload),
+                    raw={"synchronous": True, "bytes": len(payload)},
+                )
             return _job_from_payload(payload)
         raise last or VideoGenError("could not submit generation request")
 
@@ -279,7 +310,16 @@ class VideoGenClient:
             _sleep(poll_interval)
 
     def download(self, job: Job | str, dest: str) -> str:
-        """Download the finished video to ``dest``; returns ``dest``."""
+        """Save the finished video to ``dest``; returns ``dest``.
+
+        Handles both the synchronous case (bytes already in hand from
+        ``generate``) and the asynchronous case (a ``video_url`` to fetch).
+        """
+        if isinstance(job, Job) and job.video_bytes is not None:
+            with open(dest, "wb") as fh:
+                fh.write(job.video_bytes)
+            return dest
+
         video_url = job.video_url if isinstance(job, Job) else job
         if not video_url:
             raise VideoGenError("job has no video_url to download")
