@@ -184,7 +184,8 @@ async function loadProject(){
 async function softRefresh(){ // reflect agent edits without disrupting editing
   try{const s=await api('GET','/api/projects/'+PID);
     if(JSON.stringify(s)!==JSON.stringify(SPEC)){SPEC=s;$('#rawspec').value=JSON.stringify(s,null,2);
-      await loadClips();refreshPreview();toast('에이전트 변경 반영됨');}}catch(e){}
+      await loadClips();refreshPreview();toast('에이전트 변경 반영됨');}}
+  catch(e){PID=null;await refreshProjects();}  // stale/empty id -> stop polling, resync
 }
 async function loadClips(){
   const {tracks}=await api('GET','/api/projects/'+PID+'/clips');

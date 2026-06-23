@@ -304,6 +304,14 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     status, payload, ctype = fn(self, mt, body)
                     return self._send(status, payload, ctype)
+                except (KeyError, FileNotFoundError) as e:
+                    return self._send(404, {"error": f"not found: {e}"})
+                except ValueError as e:
+                    # benign "unknown project_id" etc. — clean 404, no log spam
+                    if "Unknown project_id" in str(e):
+                        return self._send(404, {"error": str(e)})
+                    traceback.print_exc()
+                    return self._send(400, {"error": str(e)})
                 except Exception as e:  # noqa: BLE001
                     traceback.print_exc()
                     return self._send(400, {"error": str(e)})
