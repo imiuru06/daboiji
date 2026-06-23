@@ -11,10 +11,12 @@ Point Claude Code's MCP server at the same DABWAYO_STORE to collaborate.
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
 import traceback
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -97,6 +99,44 @@ def _asset_get(h, m, body):
     from .. import assets
     rec = assets.get(m.group(1))
     return 200, {**rec, "lineage": [a["id"] for a in assets.lineage(m.group(1))]}, None
+
+
+@route("POST", r"/api/upload")
+def _upload(h, m, body):
+    """Durable publish: an off-box agent uploads a media file (base64) which is
+    saved to OUTPUT_DIR and registered as an asset (with provenance). This is
+    how work survives an ephemeral Claude Code sandbox — it lands on the VM."""
+    from .. import assets
+    key = os.environ.get("DABWAYO_STUDIO_KEY", "")
+    if key:                                     # optional bearer auth
+        auth = h.headers.get("Authorization", "")
+        if auth != f"Bearer {key}":
+            return 401, {"error": "unauthorized"}, None
+    if not body.get("b64"):
+        return 400, {"error": "missing b64 payload"}, None
+    try:
+        data = base64.b64decode(body["b64"])
+    except Exception:  # noqa: BLE001
+        return 400, {"error": "invalid base64"}, None
+    raw = os.path.basename(body.get("filename") or "upload.bin")
+    safe = f"{uuid.uuid4().hex[:8]}_{raw}"
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    dest = os.path.join(OUTPUT_DIR, safe)
+    with open(dest, "wb") as f:
+        f.write(data)
+    src = {"action": body.get("action", "upload"),
+           "provider": body.get("provider", ""), "prompt": body.get("prompt", "")}
+    if body.get("parent"):
+        src["parent"] = body["parent"]
+    rec = assets.register(dest, kind=body.get("kind", "video"),
+                          role=body.get("role", "upload"), source=src,
+                          projects=[body["project"]] if body.get("project") else [],
+                          tags=body.get("tags") or [])
+    guide.append_activity({"action": "publish", "summary": f"VM에 업로드: {raw}",
+                           "inputs": [body.get("parent") or raw],
+                           "outputs": [rec["id"]], "notes": f"{len(data)} bytes"})
+    return 200, {"ok": True, "asset": rec, "url": "/files/" + safe,
+                 "bytes": len(data)}, None
 
 
 @route("GET", r"/api/projects")

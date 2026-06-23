@@ -386,6 +386,22 @@ def organize_store() -> dict:
 
 
 @mcp.tool()
+def publish_to_studio(path: str, role: str = "final", kind: str = "video",
+                      action: str = "render", provider: str = "engine",
+                      prompt: str = "", parent: Optional[str] = None,
+                      project: Optional[str] = None) -> dict:
+    """Upload a finished file to the durable VM Studio (DABWAYO_STUDIO_URL).
+
+    The Claude Code sandbox is ephemeral, so call this to persist a result on
+    the VM: it is saved to the VM's OUTPUT_DIR, registered as an asset (with
+    provenance), and appears in the gallery/dashboard — surviving disconnects.
+    Returns the created asset record + its /files URL."""
+    from .publish import publish
+    return publish(path, role=role, kind=kind, action=action, provider=provider,
+                   prompt=prompt, parent=parent, project=project)
+
+
+@mcp.tool()
 def compose_sequence(asset_ids: List[str], project_id: Optional[str] = None,
                      transition: str = "fade", transition_duration: float = 0.5,
                      title: Optional[str] = None, name: str = "sequence",
