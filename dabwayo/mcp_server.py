@@ -863,7 +863,21 @@ Use get_capabilities() for the full list of element/effect/transition names.
 
 
 def main():
-    mcp.run()
+    """Run the MCP server.
+
+    Default transport is stdio (local clients spawn this via .mcp.json).
+    Set DABWAYO_MCP_TRANSPORT=http to expose it over Streamable HTTP so a
+    *remote* client (e.g. a cloud session) can reach this host's open internet
+    — bind/port come from FASTMCP_HOST / FASTMCP_PORT (default 127.0.0.1:8000;
+    use 0.0.0.0 to listen on all interfaces). 'sse' is also accepted.
+    """
+    transport = os.environ.get("DABWAYO_MCP_TRANSPORT", "stdio").lower()
+    if transport in ("http", "streamable-http", "streamable_http"):
+        mcp.run(transport="streamable-http")
+    elif transport == "sse":
+        mcp.run(transport="sse")
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":
