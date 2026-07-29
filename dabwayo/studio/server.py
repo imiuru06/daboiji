@@ -166,10 +166,13 @@ def _refs_attach(h, m, body):
                                          variant_id=body.get("variant_id")), None
 
 
-@route("POST", r"/api/references/character/([A-Za-z0-9_]+)/sheet")
-def _char_sheet(h, m, body):
-    return 200, M.generate_character_sheet(m.group(1), angles=body.get("angles"),
-                                           provider=body.get("provider")), None
+@route("POST", r"/api/references/(character|environment)/([A-Za-z0-9_]+)/sheet")
+def _ref_sheet(h, m, body):
+    if m.group(1) == "character":
+        return 200, M.generate_character_sheet(m.group(2), angles=body.get("views"),
+                                               provider=body.get("provider")), None
+    return 200, M.generate_environment_sheet(m.group(2), views=body.get("views"),
+                                             provider=body.get("provider")), None
 
 
 @route("POST", r"/api/projects/([0-9a-f]+)/storyboard/([A-Za-z0-9_]+)/bind")

@@ -137,7 +137,8 @@ function openDetail(kind, id){
       '<p class="muted" style="margin:0 0 14px"></p>'+
       '<div class="section-label">base refs</div><div class="refs">'+baseimgs+'</div>'+
       '<div class="row" style="margin:14px 0 4px">'+
-        (isChar?'<button class="btn" id="genBtn" onclick="genSheet(\''+r.id+'\')">캐릭터 시트 생성 (front · profile)</button>':'')+
+        '<button class="btn" id="genBtn" onclick="genSheet(\''+kind+'\',\''+r.id+'\')">'+
+          (isChar?'캐릭터 시트 생성 (front · profile)':'환경 시트 생성 (wide · detail)')+'</button>'+
         '<input class="grow" id="attachAid" placeholder="레퍼런스 에셋 id (ast_…)">'+
         '<button class="btn--ghost btn" onclick="attachRef(\''+kind+'\',\''+r.id+'\')">첨부</button>'+
       '</div>'+
@@ -174,11 +175,12 @@ function attachRef(kind,id){
   j("/api/references/"+kind+"/"+id+"/attach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset_id:aid})})
     .then(function(){ openDetail(kind,id); renderRefs(kind); }).catch(function(){ alert("첨부 실패 — 에셋 id를 확인하세요."); });
 }
-function genSheet(id){
+function genSheet(kind,id){
   var b=document.getElementById("genBtn"); b.disabled=true; b.textContent="생성 중…";
-  j("/api/references/character/"+id+"/sheet",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({angles:["front view","left profile view"]})})
-    .then(function(){ openDetail("character",id); renderRefs("character"); })
-    .catch(function(){ b.disabled=false; b.textContent="캐릭터 시트 생성 (실패 — provider 확인)"; });
+  var views = kind==="character" ? ["front view","left profile view"] : ["wide establishing shot","atmospheric detail shot"];
+  j("/api/references/"+kind+"/"+id+"/sheet",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({views:views})})
+    .then(function(){ openDetail(kind,id); renderRefs(kind); })
+    .catch(function(){ b.disabled=false; b.textContent="시트 생성 (실패 — provider 확인)"; });
 }
 
 function optionList(kind){

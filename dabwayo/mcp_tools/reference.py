@@ -15,7 +15,7 @@ from .app import mcp, _proj, _commit
 __all__ = ["create_reference", "list_references", "get_reference",
            "update_reference", "remove_reference", "add_reference_variant",
            "attach_reference_asset", "bind_shot", "resolve_shot", "generate_shot",
-           "generate_character_sheet"]
+           "generate_character_sheet", "generate_environment_sheet"]
 
 
 @mcp.tool()
@@ -204,6 +204,40 @@ def generate_shot(project_id: str, shot_id: str, provider: Optional[str] = None,
             "prompt": prompt, "mode": mode, "used_image": image}
 
 
+def _generate_sheet(kind, entity_id, views, provider, style, base_prompt=None):
+    """Shared: generate one reference still per ``view`` for an entity and attach
+    them to its base_refs. Provider does the imagery; dabwayo composes, extracts
+    the still, indexes and attaches."""
+    import os
+    import imageio.v2 as imageio
+    from .. import reference as _ref, assets as _assets
+    from .generation import generate_video as _gv
+    from .app import _OUTPUT_DIR
+
+    ent = _ref.get(kind, entity_id)                     # validates existence
+    desc = base_prompt or ent.get("description") or ent.get("name", kind)
+    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    created = []
+    for i, view in enumerate(views):
+        prompt = f"{desc}, {view}, {style}"
+        res = _gv("__sheet__", prompt, mode="t2v", duration=1.0,
+                  provider=provider, add_to_timeline=False)
+        png = os.path.join(_OUTPUT_DIR, f"sheet_{entity_id}_{i:02d}.png")
+        try:
+            rdr = imageio.get_reader(res["path"])
+            imageio.imwrite(png, rdr.get_data(0))
+            rdr.close()
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": f"frame extract failed: {e}", "created": created}
+        ast = _assets.register(png, kind="image", role="reference",
+                               source={"action": f"{kind}_sheet", "provider": res.get("provider"),
+                                       "prompt": prompt, "params": {kind: entity_id, "view": view}})
+        _ref.attach_ref(kind, entity_id, ast["id"])
+        created.append({"view": view, "asset_id": ast["id"], "path": png})
+    return {"ok": True, "id": entity_id, "count": len(created),
+            "provider": provider or "auto", "refs": created}
+
+
 @mcp.tool()
 def generate_character_sheet(character_id: str, angles: Optional[list] = None,
                              provider: Optional[str] = None,
@@ -217,37 +251,23 @@ def generate_character_sheet(character_id: str, angles: Optional[list] = None,
     generates a frame via the active video provider, registers it as a
     reference-image asset, and links it to the character. The provider does the
     imagery/consistency; dabwayo composes, extracts the still, indexes and
-    attaches. Returns the created reference assets."""
-    import os
-    import imageio.v2 as imageio
-    from .. import reference as _ref, assets as _assets
-    from .generation import generate_video as _gv
-    from .app import _OUTPUT_DIR
-
-    char = _ref.get("character", character_id)          # validates existence
-    desc = base_prompt or char.get("description") or char.get("name", "a character")
+    attaches."""
     angles = angles or ["front view", "three-quarter left view",
                         "left profile view", "back view"]
-    os.makedirs(_OUTPUT_DIR, exist_ok=True)
-    created = []
-    for i, angle in enumerate(angles):
-        prompt = f"{desc}, {angle}, {style}"
-        res = _gv("__sheet__", prompt, mode="t2v", duration=1.0,
-                  provider=provider, add_to_timeline=False)
-        # extract the first frame as the still reference image
-        png = os.path.join(_OUTPUT_DIR, f"sheet_{character_id}_{i:02d}.png")
-        try:
-            rdr = imageio.get_reader(res["path"])
-            imageio.imwrite(png, rdr.get_data(0))
-            rdr.close()
-        except Exception as e:  # noqa: BLE001
-            return {"ok": False, "error": f"frame extract failed: {e}", "created": created}
-        ast = _assets.register(png, kind="image", role="reference",
-                               source={"action": "character_sheet",
-                                       "provider": res.get("provider"),
-                                       "prompt": prompt,
-                                       "params": {"character": character_id, "angle": angle}})
-        _ref.attach_ref("character", character_id, ast["id"])
-        created.append({"angle": angle, "asset_id": ast["id"], "path": png})
-    return {"ok": True, "character_id": character_id, "count": len(created),
-            "provider": provider or "auto", "refs": created}
+    return _generate_sheet("character", character_id, angles, provider, style, base_prompt)
+
+
+@mcp.tool()
+def generate_environment_sheet(environment_id: str, views: Optional[list] = None,
+                               provider: Optional[str] = None,
+                               base_prompt: Optional[str] = None,
+                               style: str = "environment establishing plate, cinematic, no people") -> dict:
+    """Generate establishing reference plates for an environment and attach them
+    as its ``base_refs`` — the location sheet.
+
+    For each of ``views`` (default a wide establishing shot + an atmospheric
+    detail) it composes a prompt (``base_prompt`` or the environment's
+    description + the view + ``style``), generates a frame via the active
+    provider, registers the still, and links it to the environment."""
+    views = views or ["wide establishing shot", "atmospheric detail shot"]
+    return _generate_sheet("environment", environment_id, views, provider, style, base_prompt)
