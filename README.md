@@ -89,7 +89,7 @@ Register it with any MCP client (e.g. Claude):
 | `add_callout` | Add a speech-bubble callout for explainer overlays |
 | `set_camera` | Keyframeable pan/zoom/rotation (+ per-clip `depth` parallax) |
 | `get_project` · `update_project` · `estimate` | Inspect / replace / measure |
-| `list_clips` · `update_clip` · `remove_clip` · `move_clip` | Edit one clip in place |
+| `list_clips` · `update_clip` · `remove_clip` · `move_clip` | Edit one clip in place — target by stable `clip_id` (survives reordering) or legacy `track`+`clip_index` |
 | `preview_frame` · `render_range` | Single-frame / time-window preview |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |

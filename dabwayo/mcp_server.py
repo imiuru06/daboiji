@@ -23,6 +23,7 @@ from .mcp_tools import mcp, main  # noqa: F401  (explicit: instance + entrypoint
 from .mcp_tools.app import (  # noqa: F401
     _PROJECTS, _OUTPUT_DIR, _MUSIC_DIR, _HELP,
     _proj, _commit, _video_track, _log_activity_safe,
+    _new_clip_id, _deep_merge, _find_track, _clip_summary, _resolve_clip,
 )
 
 

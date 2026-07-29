@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .app import mcp, _proj, _commit, _video_track
+from .app import mcp, _proj, _commit, _video_track, _new_clip_id, _resolve_clip
 
 __all__ = ["add_clip", "add_text", "add_callout", "add_background", "add_media",
            "add_effect", "set_camera", "add_audio"]
@@ -23,7 +23,8 @@ def add_clip(project_id: str, element: dict, start: float = 0.0,
     ({"keyframes":[{"time":t,"value":v,"easing":e}]}). Returns the clip index."""
     spec = _proj(project_id)
     tr = _video_track(spec, track)
-    clip: Dict[str, Any] = {"element": element, "start": start, "duration": duration}
+    clip: Dict[str, Any] = {"id": _new_clip_id(), "element": element,
+                            "start": start, "duration": duration}
     if transform:
         clip["transform"] = transform
     if effects:
@@ -40,7 +41,8 @@ def add_clip(project_id: str, element: dict, start: float = 0.0,
         clip["name"] = name
     tr["clips"].append(clip)
     _commit(project_id, spec)
-    return {"ok": True, "track": tr.get("name"), "clip_index": len(tr["clips"]) - 1}
+    return {"ok": True, "track": tr.get("name"), "clip_index": len(tr["clips"]) - 1,
+            "clip_id": clip["id"]}
 
 
 @mcp.tool()
@@ -140,22 +142,30 @@ def add_media(project_id: str, path: str, kind: str = "image", start: float = 0.
 
 @mcp.tool()
 def add_effect(project_id: str, effect: dict, track: Optional[str] = None,
-               clip_index: Optional[int] = None) -> dict:
-    """Attach an effect to a specific clip (track+clip_index) or, if both are
-    omitted, to the timeline master chain (applied to the final frame).
-    ``effect`` e.g. {"type":"glow","intensity":0.6} or
-    {"type":"color_grade","contrast":1.1,"saturation":1.2}."""
+               clip_index: Optional[int] = None, clip_id: Optional[str] = None) -> dict:
+    """Attach an effect to a clip, or (if no clip is targeted) to the timeline
+    master chain (applied to the final frame).
+
+    Target a clip with ``clip_id`` (preferred — stable across edits) or the
+    legacy ``track`` + ``clip_index``; if ``track`` is given without an index,
+    the track's last clip is used. With none of clip_id/track/clip_index, the
+    effect is added to the master chain. ``effect`` e.g.
+    {"type":"glow","intensity":0.6} or {"type":"color_grade","contrast":1.1}."""
     spec = _proj(project_id)
-    if clip_index is None and track is None:
+    if clip_id is None and clip_index is None and track is None:
         spec["effects"].append(effect)
         _commit(project_id, spec)
         return {"ok": True, "scope": "master", "count": len(spec["effects"])}
-    tr = _video_track(spec, track)
-    if clip_index is None:
-        clip_index = len(tr["clips"]) - 1
-    tr["clips"][clip_index].setdefault("effects", []).append(effect)
+    if clip_id is None and clip_index is None:
+        tr = _video_track(spec, track)
+        idx = len(tr["clips"]) - 1
+    else:
+        tr, idx = _resolve_clip(spec, track, clip_index, clip_id)
+    clip = tr["clips"][idx]
+    clip.setdefault("effects", []).append(effect)
     _commit(project_id, spec)
-    return {"ok": True, "scope": "clip", "track": tr.get("name"), "clip_index": clip_index}
+    return {"ok": True, "scope": "clip", "track": tr.get("name"),
+            "clip_index": idx, "clip_id": clip.get("id", "")}
 
 
 @mcp.tool()
@@ -199,8 +209,9 @@ def add_audio(project_id: str, path: str, start: float = 0.0,
     if track is None:
         track = {"kind": "audio", "name": "audio", "clips": []}
         spec["tracks"].append(track)
-    track["clips"].append({"path": path, "start": start, "duration": duration,
-                           "gain_db": gain_db, "fade_in": fade_in,
-                           "fade_out": fade_out, "in_point": in_point})
+    clip = {"id": _new_clip_id(), "path": path, "start": start,
+            "duration": duration, "gain_db": gain_db, "fade_in": fade_in,
+            "fade_out": fade_out, "in_point": in_point}
+    track["clips"].append(clip)
     _commit(project_id, spec)
-    return {"ok": True, "audio_clips": len(track["clips"])}
+    return {"ok": True, "audio_clips": len(track["clips"]), "clip_id": clip["id"]}

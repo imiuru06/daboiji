@@ -13,6 +13,7 @@ point and function names).
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any, Dict, Optional
 
 from mcp.server.fastmcp import FastMCP
@@ -54,6 +55,66 @@ def _video_track(spec: dict, track_name: Optional[str]) -> dict:
     tr = {"kind": "video", "name": "video", "clips": []}
     tracks.append(tr)
     return tr
+
+
+# --------------------------------------------------------------------------
+# Clip identity + addressing
+#
+# Every clip gets a stable ``id`` at creation. Edit tools accept EITHER that
+# id (preferred — survives reordering/deletion of other clips) OR the legacy
+# (track, clip_index) pair, so older callers and the Studio REST layer keep
+# working unchanged.
+# --------------------------------------------------------------------------
+def _new_clip_id() -> str:
+    return "clip_" + uuid.uuid4().hex[:8]
+
+
+def _deep_merge(base: dict, patch: dict) -> dict:
+    """Recursively merge ``patch`` into ``base`` (lists are replaced; a key set
+    to null is deleted)."""
+    for k, v in patch.items():
+        if v is None:
+            base.pop(k, None)
+        elif isinstance(v, dict) and isinstance(base.get(k), dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+
+def _find_track(spec: dict, track: Optional[str], kind: str = "video") -> dict:
+    for tr in spec["tracks"]:
+        if tr.get("kind", "video") == kind and (track is None or tr.get("name") == track):
+            return tr
+    raise ValueError(f"Track {track!r} not found")
+
+
+def _clip_summary(clip: dict, idx: int) -> dict:
+    el = clip.get("element", {})
+    preview = el.get("text") or el.get("path") or el.get("color") or el.get("type", "")
+    return {"index": idx, "id": clip.get("id", ""), "name": clip.get("name", ""),
+            "type": el.get("type"), "start": clip.get("start"),
+            "duration": clip.get("duration"), "preview": str(preview)[:48]}
+
+
+def _resolve_clip(spec: dict, track: Optional[str] = None,
+                  clip_index: Optional[int] = None,
+                  clip_id: Optional[str] = None):
+    """Locate a clip by stable ``clip_id`` (searched across all tracks) or by
+    the legacy ``(track, clip_index)``. Returns ``(track_dict, index)``."""
+    if clip_id:
+        for tr in spec["tracks"]:
+            for i, c in enumerate(tr.get("clips", [])):
+                if c.get("id") == clip_id:
+                    return tr, i
+        raise ValueError(f"clip_id {clip_id!r} not found")
+    if clip_index is None:
+        raise ValueError("provide clip_id, or track + clip_index")
+    tr = _find_track(spec, track)
+    clips = tr.get("clips", [])
+    if not clips or not -len(clips) <= clip_index < len(clips):
+        raise ValueError(f"clip_index {clip_index} out of range (0..{len(clips)-1})")
+    return tr, clip_index % len(clips)
 
 
 def _log_activity_safe(action, summary, inputs=None, outputs=None, notes=""):
