@@ -115,11 +115,14 @@ def register(path: str, *, kind: str = "video", role: str = "other",
     If ``source['parent']`` is omitted but a registered asset matches an input
     path, callers can resolve it via :func:`find_by_path` first.
     """
+    ap = os.path.abspath(path)
     rec = {
         "id": aid or new_id(),
         "kind": kind,
         "role": role,
-        "path": os.path.abspath(path),
+        "path": ap,
+        "backend": "local",          # where the bytes live (see dabwayo.storage)
+        "uri": ap,                   # backend-addressed location
         "source": source or {},
         "media": probe_media(path) if probe else {},
         "projects": projects or [],
@@ -145,6 +148,10 @@ def prune() -> list[str]:
         try:
             rec = get(aid)
         except Exception:  # noqa: BLE001
+            continue
+        # only prune local-backend assets whose file is gone; remote-backed
+        # assets (s3/…) may legitimately have no local copy.
+        if rec.get("backend", "local") != "local":
             continue
         if not os.path.isfile(rec.get("path", "")):
             os.remove(_rec_path(aid))

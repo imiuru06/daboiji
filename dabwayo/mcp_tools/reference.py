@@ -179,10 +179,10 @@ def generate_shot(project_id: str, shot_id: str, provider: Optional[str] = None,
     dur = r.get("duration") or 4.0
     image = None
     if mode == "i2v" and r["reference_images"]:
-        from .. import assets as _assets
+        from ..storage import localize_asset
         for aid in r["reference_images"]:
             try:
-                image = _assets.get(aid).get("path")
+                image = localize_asset(aid)      # backend-aware (downloads if remote)
                 if image:
                     break
             except Exception:  # noqa: BLE001  (unregistered ref id — skip)
