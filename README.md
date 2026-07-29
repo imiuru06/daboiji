@@ -72,7 +72,7 @@ Register it with any MCP client (e.g. Claude):
 | `split_clip` · `trim_clip` | Split a clip in two at a time, or trim its head/tail — media source stays frame-synced |
 | `duplicate_clip` · `ripple_delete` | Copy a clip (new id), or delete + close the gap; `ripple` keeps later clips adjacent |
 | `add_captions` · `add_lower_third` | Import SRT/WebVTT subtitles as styled caption clips, or add a lower-third title |
-| `preview_frame` · `render_range` | Single-frame / time-window preview |
+| `preview_frame` · `filmstrip` · `render_range` | One frame, N evenly-spaced frames (contact sheet / scrub cache), or a time window |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
 | `list_music_sources` · `search_music` · `fetch_music` | Pull royalty-free / CC music straight from provider APIs (Jamendo, Freesound) |
@@ -180,6 +180,12 @@ shows up live in the UI (it polls every few seconds) and vice-versa. The UI
 lets you create projects, add backgrounds/text/callouts/effects, scrub a
 live preview frame, edit or delete a selected clip, edit the raw JSON spec,
 and render — all backed by the exact MCP tools.
+
+**Instant scrubbing.** The web prebuilds a filmstrip (`/api/projects/<id>/
+filmstrip`, backed by the `filmstrip` tool) and shows the nearest cached frame
+the moment you drag, fetching the exact frame only once the scrub settles — so
+scrubbing feels instant instead of one server render per pointer move. The
+cache refreshes in the background whenever the spec changes.
 
 **Share a result (read-only viewer).** Every rendered/published asset has a
 clean public player at **`/watch/<asset_id>`** — a responsive, read-only page

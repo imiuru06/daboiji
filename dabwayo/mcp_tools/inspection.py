@@ -8,7 +8,8 @@ from ..core.timeline import Timeline
 from ..render.engine import render_thumbnail
 from .app import mcp, _proj, _OUTPUT_DIR, _PROJECTS
 
-__all__ = ["get_project", "update_project", "estimate", "preview_frame"]
+__all__ = ["get_project", "update_project", "estimate", "preview_frame",
+           "filmstrip"]
 
 
 @mcp.tool()
@@ -41,3 +42,28 @@ def preview_frame(project_id: str, time: float = 0.0,
     tl = Timeline.from_spec(_proj(project_id))
     render_thumbnail(tl, out_path, time)
     return {"ok": True, "path": out_path}
+
+
+@mcp.tool()
+def filmstrip(project_id: str, count: int = 8,
+              out_dir: Optional[str] = None) -> dict:
+    """Render ``count`` evenly-spaced preview frames across the whole timeline
+    (a contact sheet / scrub cache) in one call.
+
+    Great for a fast visual overview of a whole edit — an agent can look at all
+    the frames at once instead of guessing times, and the Studio web reuses them
+    so scrubbing is instant (no per-move server render). Returns each frame's
+    time and PNG path, in order. Frames land in the output dir so the Studio can
+    serve them from /files."""
+    count = max(1, min(int(count), 64))
+    tl = Timeline.from_spec(_proj(project_id))
+    dur = tl.computed_duration() or 0.0
+    out_dir = out_dir or _OUTPUT_DIR
+    os.makedirs(out_dir, exist_ok=True)
+    frames = []
+    for i in range(count):
+        t = 0.0 if count == 1 else dur * i / (count - 1)
+        p = os.path.join(out_dir, f"strip_{project_id}_{i:02d}.png")
+        render_thumbnail(tl, p, t)
+        frames.append({"t": round(t, 3), "path": p})
+    return {"ok": True, "count": count, "duration": dur, "frames": frames}

@@ -374,7 +374,26 @@ async function saveSpec(){
   try{const spec=JSON.parse($('#rawspec').value);await api('PUT','/api/projects/'+PID,{spec});
     await loadProject();toast('스펙 저장됨');}catch(e){toast('JSON 오류: '+e.message);}
 }
-function onScrub(){stopPlay();$('#tlabel').textContent=(+$('#time').value).toFixed(1)+'s';
+// ---- filmstrip: prebuilt frames so scrubbing is instant (cache, no per-move
+// server render). Rebuilt in the background when the spec changes; the exact
+// frame is still fetched once the scrub settles. ----
+let FILMSTRIP={frames:[],sig:''};
+function stripSig(){return (SPEC?JSON.stringify(SPEC).length:0)+'|'+($('#time').max||'');}
+async function buildFilmstrip(){
+  if(!PID)return;
+  const sig=stripSig();
+  try{
+    const r=await fetch(`/api/projects/${PID}/filmstrip?count=12`).then(x=>x.json());
+    const bust='?_='+Date.now();
+    FILMSTRIP.frames=(r.frames||[]).map(f=>({t:f.t,url:f.url+bust})).sort((a,b)=>a.t-b.t);
+    FILMSTRIP.sig=sig;
+    FILMSTRIP.frames.forEach(f=>{const im=new Image();im.src=f.url;});  // preload
+  }catch(e){/* keep exact-frame fallback */}
+}
+function nearestStrip(t){let best=null,bd=1e9;for(const f of FILMSTRIP.frames){const d=Math.abs(f.t-t);if(d<bd){bd=d;best=f;}}return best;}
+function onScrub(){stopPlay();const t=+$('#time').value;$('#tlabel').textContent=t.toFixed(1)+'s';
+  // instant: show the nearest prebuilt frame right away, exact frame follows
+  const f=$('#frame');if(f&&FILMSTRIP.frames.length){const n=nearestStrip(t);if(n)f.src=n.url;}
   clearTimeout(window._sc);window._sc=setTimeout(refreshPreview,160);updatePlayhead();}
 function ensureStage(){
   if(!$('#frame')){$('#stage').innerHTML='<img id="frame"/><div id="ovl"></div><span class="badge" id="badge"></span>';}
@@ -385,6 +404,7 @@ function refreshPreview(){
   f.onload=()=>{updatePlayhead();drawHandle();};
   f.src=`/api/projects/${PID}/preview?t=${t}&_=${Date.now()}`;
   $('#badge').textContent=(+t).toFixed(1)+'s · 미리보기';
+  if(FILMSTRIP.sig!==stripSig())buildFilmstrip();   // refresh cache if spec changed
 }
 // ---- drag-to-position: handle over the preview for the selected clip ----
 let DRAG=null;

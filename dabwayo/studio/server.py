@@ -269,6 +269,18 @@ def _preview(h, m, body):
         return 200, f.read(), "image/png"
 
 
+@route("GET", r"/api/projects/([0-9a-f]+)/filmstrip")
+def _filmstrip(h, m, body):
+    """Prebuilt evenly-spaced frames so the web can scrub instantly from cache
+    instead of rendering one frame per pointer move."""
+    q = parse_qs(urlparse(h.path).query)
+    count = int(q.get("count", [12])[0])
+    r = M.filmstrip(m.group(1), count=count)
+    r["frames"] = [{"t": f["t"], "url": "/files/" + os.path.basename(f["path"])}
+                   for f in r["frames"]]
+    return 200, r, None
+
+
 @route("GET", r"/api/chat/status")
 def _chat_status(h, m, body):
     from . import chat
