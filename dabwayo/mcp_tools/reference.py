@@ -14,7 +14,7 @@ from .app import mcp, _proj, _commit
 
 __all__ = ["create_reference", "list_references", "get_reference",
            "update_reference", "remove_reference", "add_reference_variant",
-           "attach_reference_asset", "bind_shot", "resolve_shot"]
+           "attach_reference_asset", "bind_shot", "resolve_shot", "generate_shot"]
 
 
 @mcp.tool()
@@ -158,3 +158,44 @@ def resolve_shot(project_id: str, shot_id: str) -> dict:
             "reference_images": refs,
             "mode": shot.get("mode", "t2v"),
             "duration": shot.get("duration")}
+
+
+@mcp.tool()
+def generate_shot(project_id: str, shot_id: str, provider: Optional[str] = None,
+                  add_to_timeline: bool = False, start: float = 0.0,
+                  track: str = "video") -> dict:
+    """Resolve a bound shot and generate its clip through the active video
+    provider, binding the result back onto the shot (``shot.media``).
+
+    Reference-aware: it composes the prompt via resolve_shot and, for i2v, uses
+    the first resolvable reference image as the ``image`` input (the provider —
+    not dabwayo — does the actual character/style consistency; multi-image
+    conditioning depends on the provider). The generated clip is registered as
+    an asset. This is the bridge from the reference/storyboard model to real
+    footage (ADR-0001 phase 2). Returns the media path + provider + the prompt
+    used."""
+    r = resolve_shot(project_id, shot_id)
+    prompt, mode = r["prompt"], r["mode"]
+    dur = r.get("duration") or 4.0
+    image = None
+    if mode == "i2v" and r["reference_images"]:
+        from .. import assets as _assets
+        for aid in r["reference_images"]:
+            try:
+                image = _assets.get(aid).get("path")
+                if image:
+                    break
+            except Exception:  # noqa: BLE001  (unregistered ref id — skip)
+                continue
+    from .generation import generate_video as _gv
+    res = _gv(project_id, prompt, mode=mode, image=image, duration=dur,
+              provider=provider, add_to_timeline=add_to_timeline,
+              start=start, track=track)
+    spec = _proj(project_id)
+    shot = next((s for s in spec.get("storyboard", []) if s.get("id") == shot_id), None)
+    if shot is not None and res.get("path"):
+        shot["media"] = res["path"]
+        _commit(project_id, spec)
+    return {"ok": True, "shot_id": shot_id, "path": res.get("path"),
+            "asset_id": res.get("asset_id"), "provider": res.get("provider"),
+            "prompt": prompt, "mode": mode, "used_image": image}

@@ -2,7 +2,8 @@
 
 **Status:** accepted — dabwayo owns model + index + resolution (bytes & ML
 delegated). Phase 1 (reference model + CRUD + shot binding + `resolve_shot`)
-shipped; phases 2–4 pending.
+and Phase 2 (`generate_shot`: resolve → provider generation → bind back;
+reference-aware `assemble_storyboard`) shipped; phases 3–4 pending.
 **Context:** Beyond raw media files, dabwayo needs to manage *structured creative
 references* for consistent AI video: **character sheets** (with outfits, poses,
 expressions, multi-angle views), **environment/background sheets** (time of day,

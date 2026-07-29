@@ -96,17 +96,20 @@ def remove_shot(project_id: str, shot_id: str) -> dict:
 
 @mcp.tool()
 def assemble_storyboard(project_id: str, generate: bool = False,
+                        provider: Optional[str] = None,
                         transition_duration: float = 0.4, captions: bool = True,
                         track: str = "video", caption_track: str = "captions") -> dict:
     """Turn the storyboard into a timeline: lay each shot back-to-back in order,
     chaining transitions and (optionally) burning each shot's caption over it.
 
     For each shot: if it has ``media`` (a clip path) it is placed directly; else
-    if ``generate`` is true and it has a ``prompt``, a clip is generated via the
-    active video provider and cached back onto the shot; otherwise a text
-    placeholder card (the prompt) is laid down so the storyboard is viewable
-    before any generation. Deterministic — the creative choices already live in
-    the shots. Returns the placed clip ids and total duration."""
+    if ``generate`` is true it is generated via ``generate_shot`` — which is
+    reference-aware (composes the prompt + reference image from any bound
+    character/environment) through the active video ``provider`` — and cached
+    back onto the shot; otherwise a text placeholder card (the prompt) is laid
+    down so the storyboard is viewable before any generation. Deterministic — the
+    creative choices already live in the shots. Returns placed clip ids and
+    total duration."""
     spec = _proj(project_id)
     shots = _shots(spec)
     if not shots:
@@ -122,12 +125,13 @@ def assemble_storyboard(project_id: str, generate: bool = False,
         tin = {"type": shot.get("transition", "fade"), "duration": transition_duration} if i > 0 else None
         tout = {"type": "fade", "duration": transition_duration}
         media = shot.get("media")
-        if not media and generate and shot.get("prompt"):
-            from .generation import generate_video as _gv
-            res = _gv(project_id, shot["prompt"], mode=shot.get("mode", "t2v"),
-                      image=shot.get("image"), duration=dur, add_to_timeline=False)
-            media = res.get("path")
-            shot["media"] = media
+        if not media and generate and (shot.get("prompt") or shot.get("character") or shot.get("environment")):
+            from .reference import generate_shot
+            gr = generate_shot(project_id, shot["id"], provider=provider,
+                               add_to_timeline=False)
+            media = gr.get("path")
+            spec = _proj(project_id)                 # generate_shot re-committed
+            shot = _shots(spec)[i]
             generated += 1
         if media:
             clip = add_media(project_id, media, "video", t, dur, "cover", None,

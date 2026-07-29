@@ -39,3 +39,16 @@ def test_storyboard_state_is_ignored_by_engine():
     M.assemble_storyboard(pid, generate=False)
     est = M.estimate(pid)
     assert est["duration"] == 2.0
+
+
+def test_generate_shot_binds_media_and_composes_from_references():
+    # end-to-end with the offline 'local' provider; t2v so no image needed
+    pid = M.create_project(256, 144, fps=8, name="p2")["project_id"]
+    ch = M.create_reference("character", "Mina", "late-20s, dark bob")["reference"]
+    s = M.add_shot(pid, prompt="looks to the light", duration=1, mode="t2v")["shot_id"]
+    M.bind_shot(pid, s, character_id=ch["id"])
+    g = M.generate_shot(pid, s, provider="local")
+    assert g["path"] and g["provider"] == "local"
+    assert "dark bob" in g["prompt"] and "looks to the light" in g["prompt"]
+    shot = [x for x in M.get_project(pid)["storyboard"] if x["id"] == s][0]
+    assert shot.get("media") == g["path"]           # bound back onto the shot
