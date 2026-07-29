@@ -80,6 +80,7 @@ Register it with any MCP client (e.g. Claude):
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
 | `add_shot` · `list_shots` · `update_shot` · `remove_shot` · `assemble_storyboard` | Hold a shot-list plan on a project and assemble it into a timeline (the *calling agent* plans; dabwayo assembles) |
+| `create_reference` · `add_reference_variant` · `attach_reference_asset` · `bind_shot` · `resolve_shot` | Character/environment **bibles** (outfits/poses; time/lighting/mood/focus) bound to shots; `resolve_shot` composes the generation request (ADR-0001) |
 | `list_music_sources` · `search_music` · `fetch_music` | Pull royalty-free / CC music straight from provider APIs (Jamendo, Freesound) |
 
 ## Royalty-free music (`fetch_music`)

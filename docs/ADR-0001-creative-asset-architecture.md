@@ -1,6 +1,8 @@
 # ADR-0001 — Creative asset & reference-sheet architecture
 
-**Status:** proposed (awaiting sign-off)
+**Status:** accepted — dabwayo owns model + index + resolution (bytes & ML
+delegated). Phase 1 (reference model + CRUD + shot binding + `resolve_shot`)
+shipped; phases 2–4 pending.
 **Context:** Beyond raw media files, dabwayo needs to manage *structured creative
 references* for consistent AI video: **character sheets** (with outfits, poses,
 expressions, multi-angle views), **environment/background sheets** (time of day,
