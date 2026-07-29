@@ -11,8 +11,10 @@ from typing import Optional
 from .base import StorageProvider, StorageError
 from .local import LocalStorage
 from .s3 import S3Storage
+from .gcs import GCSStorage
 
-_CONSTRUCTORS = {"local": LocalStorage, "s3": S3Storage}
+_CONSTRUCTORS = {"local": LocalStorage, "s3": S3Storage, "gcs": GCSStorage}
+_AUTO_REMOTE = ["s3", "gcs"]
 
 
 def _make(name: str) -> StorageProvider:
@@ -26,8 +28,9 @@ def get_backend(name: Optional[str] = None) -> StorageProvider:
     choice = (name or os.environ.get("DABWAYO_STORAGE_BACKEND", "auto")).lower()
     if choice != "auto":
         return _make(choice)
-    if _make("s3").available()[0]:
-        return _make("s3")
+    for remote in _AUTO_REMOTE:
+        if _make(remote).available()[0]:
+            return _make(remote)
     return _make("local")
 
 
