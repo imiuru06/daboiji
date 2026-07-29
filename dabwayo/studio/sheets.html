@@ -25,6 +25,11 @@
     padding:10px 12px; white-space:pre-wrap; word-break:break-word; }
   .theme-btn{ background:transparent; border:1px solid var(--line-strong); color:var(--fg);
     border-radius:var(--radius-pill); width:32px; height:32px; padding:0; cursor:pointer; }
+  .ac{ background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--radius-sm);
+    box-shadow:var(--shadow); overflow:hidden; }
+  .ac-item{ display:flex; align-items:center; gap:8px; padding:8px 10px; font-size:var(--t-sm); cursor:pointer; }
+  .ac-item:hover,.ac-item.on{ background:var(--accent-weak); }
+  .hint{ color:var(--fg-faint); font-size:var(--t-xs); margin-top:6px; }
 </style>
 </head>
 <body>
@@ -63,11 +68,12 @@
       <div class="panel__head"><h2>스토리보드</h2><span class="count" id="sbN"></span></div>
       <div id="sbList"><span class="empty-state">—</span></div>
       <div class="row" style="margin-top:14px">
-        <input class="grow" id="shotPrompt" placeholder="샷 액션 (예: she pauses and looks to the light)">
+        <input class="grow" id="shotPrompt" placeholder="샷 액션 — @로 캐릭터·환경 멘션 (예: @Mina looks to the light in @dawn)" autocomplete="off">
         <input id="shotDur" type="number" min="0.5" step="0.5" value="4" style="width:78px" aria-label="duration">
         <select id="shotMode"><option>t2v</option><option>i2v</option></select>
         <button class="btn" onclick="addShot()">샷 추가</button>
       </div>
+      <div class="hint">@로 캐릭터·환경을 멘션하면 샷 추가 시 자동으로 바인딩됩니다.</div>
     </section>
   </div>
 
@@ -94,7 +100,7 @@ function thumb(assetId, label){ return assetId ? '<img src="/api/assets/'+assetI
 function renderRefs(kind){
   var cardsId = kind==="character"?"charCards":"envCards", nId = kind==="character"?"charN":"envN";
   return j("/api/references/"+kind).then(function(d){
-    LIB[kind] = d.references || [];
+    LIB[kind] = d.references || []; rebuildMentions();
     document.getElementById(nId).textContent = d.count ? d.count : "";
     var host = document.getElementById(cardsId); host.innerHTML="";
     if(!d.count){ host.innerHTML='<span class="empty-state">아직 없어요 — 아래에서 추가하세요.</span>'; return; }
@@ -224,14 +230,62 @@ function renderStoryboard(){
     });
   });
 }
+// ---- @mention autocomplete for shot binding ----
+var MENTIONS = {};   // lowercased name -> {kind, id, name}  (first match; may be ambiguous)
+var PICKED = {};     // lowercased name -> {kind, id}  (exact choice from autocomplete)
+function rebuildMentions(){ MENTIONS={}; ["character","environment"].forEach(function(k){
+  (LIB[k]||[]).forEach(function(r){ var key=(r.name||r.id).toLowerCase();
+    if(!MENTIONS[key]) MENTIONS[key]={kind:k,id:r.id,name:r.name||r.id}; }); }); }
+var acEl=null;
+function closeAC(){ if(acEl){ acEl.remove(); acEl=null; } }
+function shotInput(e){
+  var inp=e.target, pos=inp.selectionStart, m=/@([\w가-힣]*)$/.exec(inp.value.slice(0,pos));
+  if(!m){ closeAC(); return; }
+  var q=m[1].toLowerCase();
+  var matches=Object.keys(MENTIONS).map(function(k){return MENTIONS[k];})
+    .filter(function(x){ return x.name.toLowerCase().indexOf(q)>=0; }).slice(0,6);
+  if(!matches.length){ closeAC(); return; }
+  closeAC();
+  var r=inp.getBoundingClientRect();
+  acEl=document.createElement("div"); acEl.className="ac";
+  acEl.style.cssText="position:fixed;left:"+r.left+"px;top:"+(r.bottom+4)+"px;width:"+Math.min(r.width,340)+"px;";
+  matches.forEach(function(x){
+    var it=document.createElement("div"); it.className="ac-item";
+    it.innerHTML='<span class="chip">'+(x.kind==="character"?"캐릭터":"환경")+'</span><b></b>';
+    it.querySelector("b").textContent=x.name;
+    it.onmousedown=function(ev){ ev.preventDefault();
+      PICKED[x.name.toLowerCase()]={kind:x.kind,id:x.id};   // exact choice wins over ambiguous name
+      var val=inp.value; inp.value=val.slice(0,m.index)+"@"+x.name+" "+val.slice(pos); inp.focus(); closeAC(); };
+    acEl.appendChild(it);
+  });
+  document.body.appendChild(acEl);
+}
 function addShot(){
-  var prompt=document.getElementById("shotPrompt").value.trim(); if(!prompt) return;
+  var raw=document.getElementById("shotPrompt").value.trim(); if(!raw) return;
+  var binds={character:null, environment:null};
+  var cleaned=raw.replace(/@([\w가-힣]+)/g, function(_, nm){
+    var x=PICKED[nm.toLowerCase()] || MENTIONS[nm.toLowerCase()];
+    if(x){ binds[x.kind]=x.id; return ""; } return "@"+nm;
+  }).replace(/\s{2,}/g," ").trim();
   var dur=parseFloat(document.getElementById("shotDur").value)||4, mode=document.getElementById("shotMode").value;
-  j("/api/projects/"+PROJECT+"/storyboard",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,duration:dur,mode:mode})})
-    .then(function(){ document.getElementById("shotPrompt").value=""; renderStoryboard(); });
+  j("/api/projects/"+PROJECT+"/storyboard",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({prompt:cleaned||raw,duration:dur,mode:mode})})
+    .then(function(res){
+      document.getElementById("shotPrompt").value=""; closeAC();
+      if((binds.character||binds.environment) && res.shot_id){
+        return j("/api/projects/"+PROJECT+"/storyboard/"+res.shot_id+"/bind",
+          {method:"POST",headers:{"Content-Type":"application/json"},
+           body:JSON.stringify({character_id:binds.character, environment_id:binds.environment})});
+      }
+    }).then(renderStoryboard);
 }
 
-Promise.all([renderRefs("character"), renderRefs("environment")]).then(renderStoryboard);
+(function(){
+  var sp=document.getElementById("shotPrompt");
+  sp.addEventListener("input", shotInput);
+  sp.addEventListener("blur", function(){ setTimeout(closeAC, 120); });
+})();
+Promise.all([renderRefs("character"), renderRefs("environment")]).then(function(){ rebuildMentions(); renderStoryboard(); });
 </script>
 </body>
 </html>
