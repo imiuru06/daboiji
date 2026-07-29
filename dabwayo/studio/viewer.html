@@ -29,6 +29,16 @@
          padding:8px 14px; font-size:13px; }
   a.btn.primary{ border-color:transparent; background:var(--accent); color:#fff; }
   .empty{ color:var(--muted); text-align:center; max-width:520px; margin-top:60px; }
+  #cList{ margin:4px 0 12px; }
+  .cmt{ display:flex; gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:13.5px; align-items:baseline; }
+  .cmt:first-child{ border-top:0; }
+  .cmt .ts{ color:var(--accent); font-variant-numeric:tabular-nums; cursor:pointer; white-space:nowrap; font-size:12.5px; }
+  .cmt .who{ color:var(--muted); font-size:12px; }
+  .cmt .body{ flex:1; white-space:pre-wrap; word-break:break-word; }
+  .crow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .crow input{ flex:1; min-width:120px; background:var(--bg); color:var(--fg); border:1px solid var(--line);
+               border-radius:9px; padding:8px 10px; font:inherit; font-size:13px; }
+  .empty-c{ color:var(--muted); font-size:13px; padding:6px 0 10px; }
   footer{ margin-top:auto; padding-top:28px; color:var(--muted); font-size:12px; }
 </style>
 </head>
@@ -52,6 +62,16 @@
     </div>
   </div>
 
+  <div id="commentsBox" class="meta" style="display:none">
+    <h1 style="font-size:15px">코멘트 <span id="cCount" style="color:var(--muted);font-weight:400"></span></h1>
+    <div id="cList"></div>
+    <div class="crow">
+      <input id="cName" placeholder="이름(선택)" style="max-width:130px">
+      <input id="cText" placeholder="이 시점에 코멘트 남기기…">
+      <button id="cAdd" class="btn primary" style="cursor:pointer">현재 시점에 추가</button>
+    </div>
+  </div>
+
   <div id="empty" class="empty" style="display:none">
     <h2>영상을 찾을 수 없어요</h2>
     <p>링크의 자산 ID가 올바른지 확인해 주세요.</p>
@@ -68,6 +88,45 @@
   var id = (qid || (last && last !== "watch" ? last : "")) || "";
   var empty = document.getElementById("empty");
   if(!id){ empty.style.display="block"; return; }
+  var PLAYER = null;
+
+  function fmt(t){ t=Math.max(0,t||0); var m=Math.floor(t/60), s=Math.floor(t%60);
+    return m+":"+(s<10?"0":"")+s; }
+  function renderComments(list){
+    var box=document.getElementById("commentsBox"); box.style.display="block";
+    document.getElementById("cCount").textContent = list.length ? "· "+list.length : "";
+    var host=document.getElementById("cList");
+    if(!list.length){ host.innerHTML='<div class="empty-c">아직 코멘트가 없어요. 첫 코멘트를 남겨보세요.</div>'; return; }
+    host.innerHTML="";
+    list.forEach(function(c){
+      var row=document.createElement("div"); row.className="cmt";
+      var ts=document.createElement("span"); ts.className="ts"; ts.textContent="["+fmt(c.t)+"]";
+      ts.title="이 시점으로 이동"; ts.onclick=function(){ if(PLAYER){ try{PLAYER.currentTime=c.t; PLAYER.play&&PLAYER.play();}catch(e){} } };
+      var body=document.createElement("span"); body.className="body";
+      var who=document.createElement("span"); who.className="who"; who.textContent=(c.author||"anon")+": ";
+      body.appendChild(who); body.appendChild(document.createTextNode(c.text||""));
+      row.appendChild(ts); row.appendChild(body); host.appendChild(row);
+    });
+  }
+  function loadComments(){
+    fetch("/api/assets/"+encodeURIComponent(id)+"/comments")
+      .then(function(r){ return r.ok?r.json():{comments:[]}; })
+      .then(function(j){ renderComments(j.comments||[]); })
+      .catch(function(){ renderComments([]); });
+  }
+  function postComment(){
+    var text=document.getElementById("cText").value.trim(); if(!text) return;
+    var t = PLAYER ? (PLAYER.currentTime||0) : 0;
+    var author=document.getElementById("cName").value.trim();
+    fetch("/api/assets/"+encodeURIComponent(id)+"/comments",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({t:t, text:text, author:author})
+    }).then(function(r){ return r.json(); })
+      .then(function(){ document.getElementById("cText").value=""; loadComments(); })
+      .catch(function(){});
+  }
+  document.getElementById("cAdd").addEventListener("click", postComment);
+  document.getElementById("cText").addEventListener("keydown", function(e){ if(e.key==="Enter") postComment(); });
 
   fetch("/api/assets/" + encodeURIComponent(id))
     .then(function(r){ if(!r.ok) throw new Error("not found"); return r.json(); })
@@ -85,6 +144,8 @@
       }
       player.src = url;
       stage.style.display = "block";
+      PLAYER = player;
+      loadComments();
 
       var mb = document.getElementById("metaBox"); mb.style.display="block";
       document.getElementById("title").textContent =

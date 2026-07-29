@@ -101,6 +101,21 @@ def _asset_get(h, m, body):
     return 200, {**rec, "lineage": [a["id"] for a in assets.lineage(m.group(1))]}, None
 
 
+# -- Timestamped review comments (shared viewer <-> agent) ------------------
+@route("GET", r"/api/assets/(ast_[0-9a-f]+)/comments")
+def _comments_get(h, m, body):
+    from .. import comments
+    return 200, {"comments": comments.list_comments(m.group(1))}, None
+
+
+@route("POST", r"/api/assets/(ast_[0-9a-f]+)/comments")
+def _comments_post(h, m, body):
+    from .. import comments
+    rec = comments.add_comment(m.group(1), body.get("t", 0),
+                               body.get("text", ""), body.get("author", ""))
+    return 200, {"ok": True, "comment": rec}, None
+
+
 @route("POST", r"/api/upload")
 def _upload(h, m, body):
     """Durable publish: an off-box agent uploads a media file (base64) which is

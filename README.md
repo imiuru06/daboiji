@@ -72,6 +72,7 @@ Register it with any MCP client (e.g. Claude):
 | `split_clip` · `trim_clip` | Split a clip in two at a time, or trim its head/tail — media source stays frame-synced |
 | `duplicate_clip` · `ripple_delete` | Copy a clip (new id), or delete + close the gap; `ripple` keeps later clips adjacent |
 | `add_captions` · `add_lower_third` | Import SRT/WebVTT subtitles as styled caption clips, or add a lower-third title |
+| `list_comments` · `add_comment` | Read/write timestamped review comments — the shared viewer's feedback, readable by the agent |
 | `preview_frame` · `filmstrip` · `render_range` | One frame, N evenly-spaced frames (contact sheet / scrub cache), or a time window |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
@@ -193,6 +194,11 @@ that resolves the asset and streams it from `/files`, showing title,
 resolution/duration and any licence attribution. `publish_to_studio` /
 `/api/upload` returns the `watch` path so you can hand an audience a link
 without giving them the editor.
+
+**Timestamped comments.** On the viewer, anyone can pin a note to the current
+moment; clicking a comment's timecode seeks there. The agent reads that feedback
+back with the `list_comments` tool and edits accordingly — a closed review loop
+(audience comments → agent fixes) without the editor being exposed.
 
 #### Use it from other agents (Copilot, opencode, Cline, …)
 The MCP server is **provider-neutral** — any MCP client drives the same tools

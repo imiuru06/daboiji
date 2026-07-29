@@ -18,11 +18,11 @@ from .app import mcp, main
 # clips); keeping clips before generation avoids a partial-import surprise.
 from . import (  # noqa: E402
     discovery, projects, clips, editing, captions, generation, watermark,
-    music, assets, dashboard, inspection, render,
+    music, assets, dashboard, inspection, render, comments,
 )
 
 _MODULES = [discovery, projects, clips, editing, captions, generation,
-            watermark, music, assets, dashboard, inspection, render]
+            watermark, music, assets, dashboard, inspection, render, comments]
 
 # Hoist every category module's public tool functions to the package namespace
 # so `dabwayo.mcp_tools.add_text` (and the mcp_server shim) resolve them.
