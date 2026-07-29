@@ -186,6 +186,55 @@ def _sb_bind(h, m, body):
                             camera=body.get("camera")), None
 
 
+# -- First-class storyboard library (ADR-0002) ------------------------------
+@route("GET", r"/api/storyboards")
+def _sbs_list(h, m, body):
+    return 200, M.list_storyboards(), None
+
+
+@route("POST", r"/api/storyboards")
+def _sbs_create(h, m, body):
+    return 200, M.create_storyboard(body.get("name", "Untitled"),
+                                    body.get("description", ""),
+                                    body.get("width", 1080), body.get("height", 1920),
+                                    body.get("fps", 24.0)), None
+
+
+@route("GET", r"/api/storyboards/(sb_[0-9a-f]+)")
+def _sbs_get(h, m, body):
+    return 200, M.get_storyboard(m.group(1)), None
+
+
+@route("POST", r"/api/storyboards/(sb_[0-9a-f]+)/scene")
+def _sbs_scene(h, m, body):
+    return 200, M.add_scene(m.group(1), body.get("name", "")), None
+
+
+@route("POST", r"/api/storyboards/(sb_[0-9a-f]+)/shot")
+def _sbs_shot(h, m, body):
+    return 200, M.add_storyboard_shot(
+        m.group(1), body["scene_id"], prompt=body.get("prompt", ""),
+        duration=body.get("duration", 4), mode=body.get("mode", "t2v"),
+        caption=body.get("caption", ""), cast=body.get("cast"),
+        environment=body.get("environment"), props=body.get("props"),
+        camera=body.get("camera")), None
+
+
+@route("GET", r"/api/storyboards/(sb_[0-9a-f]+)/cast")
+def _sbs_cast(h, m, body):
+    return 200, M.storyboard_cast(m.group(1)), None
+
+
+@route("GET", r"/api/storyboards/(sb_[0-9a-f]+)/shot/(shot_[0-9a-f]+)/resolve")
+def _sbs_resolve(h, m, body):
+    return 200, M.resolve_storyboard_shot(m.group(1), m.group(2)), None
+
+
+@route("POST", r"/api/storyboards/(sb_[0-9a-f]+)/assemble")
+def _sbs_assemble(h, m, body):
+    return 200, M.assemble_storyboard_project(m.group(1), project_id=body.get("project_id")), None
+
+
 @route("GET", r"/api/assets/(ast_[0-9a-f]+)/file")
 def _asset_file(h, m, body):
     """Serve an asset's bytes by id (backend-aware) so the UI can show thumbnails
@@ -461,6 +510,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, f.read(), "text/html; charset=utf-8")
         if path in ("/sheets", "/sheets.html"):
             with open(os.path.join(HERE, "sheets.html"), "rb") as f:
+                return self._send(200, f.read(), "text/html; charset=utf-8")
+        if path in ("/board", "/board.html"):
+            with open(os.path.join(HERE, "board.html"), "rb") as f:
                 return self._send(200, f.read(), "text/html; charset=utf-8")
         if path.startswith("/files/"):
             name = os.path.basename(path[len("/files/"):])

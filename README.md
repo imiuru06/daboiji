@@ -218,6 +218,11 @@ resolution/duration and any licence attribution. `publish_to_studio` /
 `/api/upload` returns the `watch` path so you can hand an audience a link
 without giving them the editor.
 
+**Storyboard board.** `/board` is the storyboard library — pick a storyboard,
+lay out scenes → shots with per-shot multi-cast + environment pickers, expand a
+shot's `resolve` to see the composed prompt, read the cast/locations/props
+breakdown, and assemble the plan into a render project. Links to `/sheets`.
+
 **Creative sheets.** `/sheets` (optionally `?project=<id>`) is a panel to view
 and create character/environment **bibles** and a project's **storyboard** —
 each shot's `resolve` shows the composed prompt + reference images the provider

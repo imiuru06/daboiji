@@ -53,7 +53,9 @@ Backward compatible: the old per-project storyboard tools (`add_shot`,
    assemble-into-project + `prop` kind.** ✅ shipped
 2. Prop-bible generation (`generate_prop_sheet`), cast list (`storyboard_cast`),
    scene + shot reordering (`move_scene`, `move_storyboard_shot`). ✅ shipped
-3. Studio UI for the storyboard library (scenes board, multi-cast pickers).
+3. Studio UI for the storyboard library — `/board`: storyboard list, scenes
+   board, per-shot multi-cast + environment pickers, live `resolve`, cast/
+   locations/props breakdown, and assemble-to-project. ✅ shipped. ADR complete.
 
 ## Scope check
 All of this is structured plan/state the calling agent authors and dabwayo
