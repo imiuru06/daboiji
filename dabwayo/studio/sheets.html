@@ -30,6 +30,8 @@
   .ac-item{ display:flex; align-items:center; gap:8px; padding:8px 10px; font-size:var(--t-sm); cursor:pointer; }
   .ac-item:hover,.ac-item.on{ background:var(--accent-weak); }
   .hint{ color:var(--fg-faint); font-size:var(--t-xs); margin-top:6px; }
+  .dropzone{ border:1.5px dashed transparent; border-radius:var(--radius-sm); padding:4px; transition:.12s; }
+  .dropzone.dragover{ border-color:var(--accent); background:var(--accent-weak); }
 </style>
 </head>
 <body>
@@ -141,7 +143,8 @@ function openDetail(kind, id){
     d.innerHTML =
       '<div class="panel__head"><h2></h2><span class="count mono">'+kind+' · '+r.id+'</span></div>'+
       '<p class="muted" style="margin:0 0 14px"></p>'+
-      '<div class="section-label">base refs</div><div class="refs">'+baseimgs+'</div>'+
+      '<div class="section-label">base refs <span class="faint">— 이미지를 끌어다 놓아 추가</span></div>'+
+      '<div class="refs dropzone" id="dz">'+baseimgs+'</div>'+
       '<div class="row" style="margin:14px 0 4px">'+
         '<button class="btn" id="genBtn" onclick="genSheet(\''+kind+'\',\''+r.id+'\')">'+
           (isChar?'캐릭터 시트 생성 (front · profile)':'환경 시트 생성 (wide · detail)')+'</button>'+
@@ -165,8 +168,31 @@ function openDetail(kind, id){
       el.querySelector(".vf").textContent=v.prompt_fragment||"";
       vwrap.appendChild(el);
     });
+    var dz=d.querySelector("#dz");
+    if(dz){
+      dz.ondragover=function(e){ e.preventDefault(); dz.classList.add("dragover"); };
+      dz.ondragleave=function(){ dz.classList.remove("dragover"); };
+      dz.ondrop=function(e){ e.preventDefault(); dz.classList.remove("dragover");
+        var files=[].slice.call(e.dataTransfer.files).filter(function(f){ return /^image\//.test(f.type); });
+        if(files.length) dropFiles(kind, r.id, files);
+      };
+    }
     d.scrollIntoView({behavior:"smooth", block:"nearest"});
   });
+}
+function fileToB64(file){ return new Promise(function(res,rej){ var r=new FileReader();
+  r.onload=function(){ res(String(r.result).split(",")[1]); }; r.onerror=rej; r.readAsDataURL(file); }); }
+function dropFiles(kind, id, files){
+  var chain=Promise.resolve();
+  files.forEach(function(f){ chain=chain.then(function(){ return fileToB64(f).then(function(b64){
+    return j("/api/upload",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({b64:b64, filename:f.name, kind:"image", role:"reference"})})
+      .then(function(up){ var aid=(up.asset||{}).id; if(!aid) return;
+        return j("/api/references/"+kind+"/"+id+"/attach",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({asset_id:aid})}); });
+  }); }); });
+  chain.then(function(){ openDetail(kind,id); renderRefs(kind); })
+       .catch(function(){ alert("업로드/첨부 실패"); });
 }
 function addVariant(kind,id){
   var label=document.getElementById("vLabel").value.trim(); if(!label) return;
