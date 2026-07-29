@@ -17,12 +17,12 @@ from .app import mcp, main
 # Import order matters only where one module imports another (generation ->
 # clips); keeping clips before generation avoids a partial-import surprise.
 from . import (  # noqa: E402
-    discovery, projects, clips, editing, generation, watermark,
+    discovery, projects, clips, editing, captions, generation, watermark,
     music, assets, dashboard, inspection, render,
 )
 
-_MODULES = [discovery, projects, clips, editing, generation, watermark,
-            music, assets, dashboard, inspection, render]
+_MODULES = [discovery, projects, clips, editing, captions, generation,
+            watermark, music, assets, dashboard, inspection, render]
 
 # Hoist every category module's public tool functions to the package namespace
 # so `dabwayo.mcp_tools.add_text` (and the mcp_server shim) resolve them.

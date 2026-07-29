@@ -92,6 +92,7 @@ Register it with any MCP client (e.g. Claude):
 | `list_clips` · `update_clip` · `remove_clip` · `move_clip` | Edit one clip in place — target by stable `clip_id` (survives reordering) or legacy `track`+`clip_index` |
 | `split_clip` · `trim_clip` | Split a clip in two at a time, or trim its head/tail — media source stays frame-synced |
 | `duplicate_clip` · `ripple_delete` | Copy a clip (new id), or delete + close the gap; `ripple` keeps later clips adjacent |
+| `add_captions` · `add_lower_third` | Import SRT/WebVTT subtitles as styled caption clips, or add a lower-third title |
 | `preview_frame` · `render_range` | Single-frame / time-window preview |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
