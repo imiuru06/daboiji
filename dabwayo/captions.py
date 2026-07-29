@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from typing import List, Dict
 
-__all__ = ["parse_captions", "parse_timestamp"]
+__all__ = ["parse_captions", "parse_timestamp", "words_from_cues", "group_words"]
 
 # HH:MM:SS,mmm (SRT) or HH:MM:SS.mmm / MM:SS.mmm (VTT); comma or dot; hours opt.
 _TS = re.compile(r"(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})")
@@ -57,3 +57,45 @@ def parse_captions(text: str) -> List[Dict]:
             continue
         cues.append({"start": start, "end": end, "text": body})
     return cues
+
+
+def words_from_cues(cues: List[Dict]) -> List[Dict]:
+    """Approximate per-word timings from line-level cues by splitting each cue's
+    text into words and spreading them across the cue's span, weighted by word
+    length. Use this when you only have line-level subtitles (SRT) but want
+    word-timed captions. Returns ``[{"word","start","end"}, ...]``."""
+    out: List[Dict] = []
+    for c in cues:
+        toks = str(c.get("text", "")).split()
+        span = float(c["end"]) - float(c["start"])
+        if not toks or span <= 0:
+            continue
+        weights = [max(1, len(t)) for t in toks]
+        total = sum(weights)
+        acc = float(c["start"])
+        for tok, w in zip(toks, weights):
+            d = span * w / total
+            out.append({"word": tok, "start": round(acc, 3), "end": round(acc + d, 3)})
+            acc += d
+    return out
+
+
+def group_words(words: List[Dict], size: int = 3) -> List[Dict]:
+    """Group a word-timestamp list into pop-on chunks of ``size`` words each.
+    Each group spans from its first word's start to its last word's end.
+    Accepts ``word`` or ``text`` as the token key. Returns
+    ``[{"text","start","end"}, ...]``."""
+    size = max(1, int(size))
+    norm = []
+    for w in words:
+        tok = (w.get("word") if isinstance(w, dict) else None) or (
+            w.get("text") if isinstance(w, dict) else None)
+        if tok is None or "start" not in w or "end" not in w:
+            continue
+        norm.append({"text": str(tok), "start": float(w["start"]), "end": float(w["end"])})
+    groups: List[Dict] = []
+    for i in range(0, len(norm), size):
+        chunk = norm[i:i + size]
+        groups.append({"text": " ".join(c["text"] for c in chunk),
+                       "start": chunk[0]["start"], "end": chunk[-1]["end"]})
+    return groups

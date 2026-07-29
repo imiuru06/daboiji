@@ -1,5 +1,6 @@
-"""Tests for the SRT/WebVTT caption parser."""
-from dabwayo.captions import parse_captions, parse_timestamp
+"""Tests for the SRT/WebVTT caption parser and word-grouping."""
+from dabwayo.captions import (parse_captions, parse_timestamp,
+                              words_from_cues, group_words)
 
 
 def test_parse_timestamp_srt_and_vtt():
@@ -29,3 +30,23 @@ def test_skips_invalid_and_zero_length():
            "2\n00:00:03,000 --> 00:00:04,000\nkeep me\n")
     cues = parse_captions(txt)
     assert [c["text"] for c in cues] == ["keep me"]
+
+
+def test_words_from_cues_spread_within_span():
+    cues = [{"start": 0.0, "end": 2.0, "text": "a bb ccc"}]
+    words = words_from_cues(cues)
+    assert [w["word"] for w in words] == ["a", "bb", "ccc"]
+    assert words[0]["start"] == 0.0
+    assert abs(words[-1]["end"] - 2.0) < 1e-6          # spans the whole cue
+    assert all(words[i]["end"] <= words[i + 1]["start"] + 1e-9
+               for i in range(len(words) - 1))          # monotonic
+
+
+def test_group_words_chunks_and_spans():
+    words = [{"word": "one", "start": 0.0, "end": 0.5},
+             {"word": "two", "start": 0.5, "end": 1.0},
+             {"text": "three", "start": 1.0, "end": 1.5}]   # accepts word/text
+    groups = group_words(words, size=2)
+    assert len(groups) == 2
+    assert groups[0] == {"text": "one two", "start": 0.0, "end": 1.0}
+    assert groups[1] == {"text": "three", "start": 1.0, "end": 1.5}

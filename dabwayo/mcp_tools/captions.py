@@ -14,7 +14,7 @@ from typing import Optional
 from .app import mcp, _proj
 from .clips import add_clip
 
-__all__ = ["add_captions", "add_lower_third"]
+__all__ = ["add_captions", "add_lower_third", "add_word_captions"]
 
 
 def _legible_text(text, size, font, color, stroke, stroke_width, max_width, align="center"):
@@ -80,6 +80,58 @@ def add_captions(project_id: str, srt: Optional[str] = None,
     return {"ok": True, "count": len(clip_ids), "track": track,
             "clip_ids": clip_ids,
             "span": [cues[0]["start"] + offset, cues[-1]["end"] + offset]}
+
+
+@mcp.tool()
+def add_word_captions(project_id: str, words: Optional[list] = None,
+                      srt: Optional[str] = None, path: Optional[str] = None,
+                      track: str = "captions", group_size: int = 3,
+                      font: str = "sans-bold", size: Optional[int] = None,
+                      color: str = "#ffffff", stroke: str = "#000000",
+                      stroke_width: int = 4, bottom_margin: Optional[int] = None,
+                      offset: float = 0.0) -> dict:
+    """Lay punchy word-timed "pop-on" captions (Reels/Opus-Clip style): a few
+    words at a time appear in sync with speech, one group after another.
+
+    Provide ``words`` as ASR word timestamps — a list of
+    ``{"word"/"text","start","end"}`` (e.g. Whisper word output) — OR give
+    ``srt``/``path`` line-level subtitles and per-word times are approximated by
+    spreading each line's words across its span. ``group_size`` words show at
+    once (1 = one word at a time, very punchy; 3 = short phrases). Styled larger
+    than normal subtitles, centered near the bottom with stroke + shadow. Every
+    group is a stable clip. Returns the clip ids."""
+    from ..captions import parse_captions, words_from_cues, group_words
+    if not words:
+        if not srt and not path:
+            raise ValueError("provide 'words' (ASR timestamps) or 'srt'/'path'")
+        if path and not srt:
+            if not os.path.exists(path):
+                raise ValueError(f"subtitle file not found: {path}")
+            with open(path, "r", encoding="utf-8-sig") as f:
+                srt = f.read()
+        words = words_from_cues(parse_captions(srt))
+    groups = group_words(words, group_size)
+    if not groups:
+        return {"ok": False, "error": "no word groups", "count": 0}
+
+    spec = _proj(project_id)
+    w = int(spec.get("width", 1920))
+    h = int(spec.get("height", 1080))
+    size = size or max(22, round(h * 0.062))
+    bottom_margin = bottom_margin or round(h * 0.10)
+    y = h - bottom_margin
+
+    clip_ids = []
+    for g in groups:
+        el = _legible_text(g["text"], size, font, color, stroke, stroke_width,
+                           round(w * 0.86))
+        transform = {"position": [round(w / 2), y], "anchor": "bottom"}
+        r = add_clip(project_id, el, g["start"] + offset,
+                     max(0.05, g["end"] - g["start"]), track, transform)
+        clip_ids.append(r["clip_id"])
+    return {"ok": True, "count": len(clip_ids), "groups": len(groups),
+            "track": track, "clip_ids": clip_ids,
+            "span": [groups[0]["start"] + offset, groups[-1]["end"] + offset]}
 
 
 @mcp.tool()
