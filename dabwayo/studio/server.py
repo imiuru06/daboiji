@@ -136,7 +136,7 @@ def _upload(h, m, body):
                            "inputs": [body.get("parent") or raw],
                            "outputs": [rec["id"]], "notes": f"{len(data)} bytes"})
     return 200, {"ok": True, "asset": rec, "url": "/files/" + safe,
-                 "bytes": len(data)}, None
+                 "watch": "/watch/" + rec["id"], "bytes": len(data)}, None
 
 
 @route("GET", r"/api/projects")
@@ -340,6 +340,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, f.read(), "text/html; charset=utf-8")
         if path in ("/gallery", "/gallery.html"):
             with open(os.path.join(HERE, "gallery.html"), "rb") as f:
+                return self._send(200, f.read(), "text/html; charset=utf-8")
+        if path == "/watch" or path.startswith("/watch/"):
+            # read-only public player; the page resolves the asset id (path tail
+            # or ?v=) client-side against /api/assets + /files.
+            with open(os.path.join(HERE, "viewer.html"), "rb") as f:
                 return self._send(200, f.read(), "text/html; charset=utf-8")
         if path.startswith("/files/"):
             name = os.path.basename(path[len("/files/"):])

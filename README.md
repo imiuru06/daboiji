@@ -181,6 +181,13 @@ lets you create projects, add backgrounds/text/callouts/effects, scrub a
 live preview frame, edit or delete a selected clip, edit the raw JSON spec,
 and render — all backed by the exact MCP tools.
 
+**Share a result (read-only viewer).** Every rendered/published asset has a
+clean public player at **`/watch/<asset_id>`** — a responsive, read-only page
+that resolves the asset and streams it from `/files`, showing title,
+resolution/duration and any licence attribution. `publish_to_studio` /
+`/api/upload` returns the `watch` path so you can hand an audience a link
+without giving them the editor.
+
 #### Use it from other agents (Copilot, opencode, Cline, …)
 The MCP server is **provider-neutral** — any MCP client drives the same tools
 on the same shared store. Drop-in config templates live in
