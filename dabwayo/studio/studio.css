@@ -204,3 +204,10 @@
   .stage-wrap{height:36vh;min-height:180px}
   .hgroup.proj .btn.sm{padding:6px 8px}
 }
+
+  /* ---------- sheets overlay (integrated project-aware view) ---------- */
+  .sheets-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:none;flex-direction:column}
+  .sheets-overlay.open{display:flex}
+  .sheets-overlay .so-head{display:flex;align-items:center;gap:10px;padding:10px 16px;
+        border-bottom:1px solid var(--line);background:var(--panel)}
+  .sheets-overlay iframe{flex:1;width:100%;border:0;background:var(--bg)}

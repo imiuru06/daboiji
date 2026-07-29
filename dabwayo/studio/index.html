@@ -20,6 +20,7 @@
   <span class="sp"></span>
   <span class="store" id="store"></span>
   <label class="live">동기화<span class="switch"><input type="checkbox" id="live" checked><span class="slider"></span></span></label>
+  <button class="btn sm ghost" onclick="openSheets()" title="캐릭터·환경·스토리보드 시트">🎬 시트</button>
   <button class="btn brand" id="renderBtn" onclick="doRender()">▶ 렌더</button>
 </header>
 
@@ -169,6 +170,26 @@
   <button data-mv="inspect" onclick="setMView('inspect')"><span class="ic">⚙</span>속성</button>
 </nav>
 
+<!-- Sheets / storyboard, integrated as a project-aware overlay (same store) -->
+<div id="sheetsOverlay" class="sheets-overlay">
+  <div class="so-head"><b>시트 · 스토리보드</b>
+    <span id="sheetsCtx" class="store"></span><span style="flex:1"></span>
+    <button class="btn sm ghost" onclick="openSheets()" title="새로고침">↻</button>
+    <button class="btn sm" onclick="closeSheets()">✕ 닫기</button>
+  </div>
+  <iframe id="sheetsFrame" title="시트"></iframe>
+</div>
+
 <script src="/studio.js"></script>
+<script>
+  function openSheets(){
+    var pid=(document.getElementById('proj')||{}).value||'';
+    document.getElementById('sheetsFrame').src='/sheets'+(pid?('?project='+pid):'');
+    document.getElementById('sheetsCtx').textContent = pid ? ('project '+pid) : '(프로젝트 미선택)';
+    document.getElementById('sheetsOverlay').classList.add('open');
+  }
+  function closeSheets(){ document.getElementById('sheetsOverlay').classList.remove('open'); }
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeSheets(); });
+</script>
 </body>
 </html>
