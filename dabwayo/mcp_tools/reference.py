@@ -34,8 +34,10 @@ def list_references(entity_type: str) -> dict:
     items = _ref.list_all(entity_type)
     return {"ok": True, "count": len(items),
             "references": [{"id": r["id"], "name": r.get("name"),
+                            "description": r.get("description", ""),
                             "variants": len(r.get("variants", [])),
-                            "base_refs": len(r.get("base_refs", []))} for r in items]}
+                            "base_refs": len(r.get("base_refs", [])),
+                            "thumb": (r.get("base_refs") or [None])[0]} for r in items]}
 
 
 @mcp.tool()

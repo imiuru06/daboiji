@@ -160,6 +160,45 @@ def _sb_resolve(h, m, body):
     return 200, M.resolve_shot(m.group(1), m.group(2)), None
 
 
+@route("POST", r"/api/references/(character|environment)/([A-Za-z0-9_]+)/attach")
+def _refs_attach(h, m, body):
+    return 200, M.attach_reference_asset(m.group(1), m.group(2), body["asset_id"],
+                                         variant_id=body.get("variant_id")), None
+
+
+@route("POST", r"/api/references/character/([A-Za-z0-9_]+)/sheet")
+def _char_sheet(h, m, body):
+    return 200, M.generate_character_sheet(m.group(1), angles=body.get("angles"),
+                                           provider=body.get("provider")), None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/storyboard/([A-Za-z0-9_]+)/bind")
+def _sb_bind(h, m, body):
+    _snapshot(m.group(1))
+    return 200, M.bind_shot(m.group(1), m.group(2),
+                            character_id=body.get("character_id"),
+                            character_variants=body.get("character_variants"),
+                            environment_id=body.get("environment_id"),
+                            environment_variant=body.get("environment_variant"),
+                            camera=body.get("camera")), None
+
+
+@route("GET", r"/api/assets/(ast_[0-9a-f]+)/file")
+def _asset_file(h, m, body):
+    """Serve an asset's bytes by id (backend-aware) so the UI can show thumbnails
+    regardless of where the file lives."""
+    from ..storage import localize_asset
+    fp = localize_asset(m.group(1))
+    if not os.path.isfile(fp):
+        return 404, {"error": "no bytes"}, None
+    ext = os.path.splitext(fp)[1].lower()
+    ctype = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+             ".webp": "image/webp", ".mp4": "video/mp4",
+             ".mp3": "audio/mpeg", ".wav": "audio/wav"}.get(ext, "application/octet-stream")
+    with open(fp, "rb") as f:
+        return 200, f.read(), ctype
+
+
 @route("POST", r"/api/upload")
 def _upload(h, m, body):
     """Durable publish: an off-box agent uploads a media file (base64) which is
