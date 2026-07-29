@@ -8,7 +8,7 @@ and audio — all serializable and driven by tools.
 
 ```
                  ┌────────────────────────────────────────────┐
-   agent ──MCP──▶│  dabwayo.mcp_server  (FastMCP, 16 tools) │
+   agent ──MCP──▶│  dabwayo.mcp_server  (FastMCP, 45 tools) │
                  └───────────────┬────────────────────────────┘
                                  ▼
         Project (JSON spec) ─▶ Timeline ─▶ Render engine ─▶ H.264 MP4
@@ -33,32 +33,11 @@ pip install -r requirements.txt      # numpy, Pillow, imageio[-ffmpeg], mcp
 # or:  pip install -e .
 ```
 
-## Quick start (Python)
-```python
-import dabwayo as vf
-from dabwayo import keyframes as K
-
-p = vf.Project(1920, 1080, fps=30, background="#0b0e16")
-bg = p.track("video", "bg")
-bg.add(vf.Project.gradient([[0, "#1a2c5e"], [1, "#0b0e16"]], kind="radial"), 0, 4)
-
-title = p.track("video", "title")
-(title.add(vf.Project.text("Hello, agents.", size=120, font="display"), 0.3, 3.4)
-      .scale(K((0.3, 1.1), (1.1, 1.0, "ease_out_cubic")))
-      .effect("glow", intensity=0.4)
-      .transition_in("fade", 0.5).transition_out("fade", 0.5))
-
-p.master_effect("color_grade", contrast=1.05, saturation=1.1)
-p.master_effect("vignette", amount=0.4)
-p.render("output/hello.mp4")
-```
-
-## Quick start (declarative JSON)
-```python
-import json, dabwayo as vf
-spec = json.load(open("examples/quickstart_spec.json"))
-vf.render(vf.Timeline.from_spec(spec), "output/quickstart.mp4")
-```
+> **Primary interface: the MCP tools.** Authoring, editing and rendering are
+> driven through the MCP server (below) — that is where all editing logic
+> lives, so agents, the Studio web and scripts share one implementation. The
+> Python `Project` builder shown further down is the **low-level engine** those
+> tools drive; reach for it only for advanced/embedded use.
 
 ## Run as an MCP server
 ```bash
@@ -229,6 +208,30 @@ Provider is chosen by `DABWAYO_LLM_PROVIDER` (else auto-detected from the
 key present). The chat tools are thin wrappers over the same MCP functions, so
 the agent's edits interoperate with everything above. The UI also has **undo**
 (↶) — edits and chat turns are snapshotted server-side.
+
+## Low-level engine API (advanced)
+The MCP tools above are the supported way to author. If you are embedding the
+engine directly, the same JSON spec is reachable through the Python builder —
+treat it as internal (import from `dabwayo.builder`, not as a stable public API):
+
+```python
+from dabwayo.builder import Project, keyframes as K
+
+p = Project(1920, 1080, fps=30, background="#0b0e16")
+title = p.track("video", "title")
+(title.add(Project.text("Hello, agents.", size=120, font="display"), 0.3, 3.4)
+      .scale(K((0.3, 1.1), (1.1, 1.0, "ease_out_cubic")))
+      .effect("glow", intensity=0.4)
+      .transition_in("fade", 0.5))
+p.master_effect("color_grade", contrast=1.05, saturation=1.1)
+p.render("output/hello.mp4")
+
+# or render a complete spec directly:
+import json
+from dabwayo import Timeline, render
+render(Timeline.from_spec(json.load(open("examples/quickstart_spec.json"))),
+       "output/quickstart.mp4")
+```
 
 ## The spec model
 A `Timeline` owns ordered **tracks**; video tracks composite **bottom → top**.

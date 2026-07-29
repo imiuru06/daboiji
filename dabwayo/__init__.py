@@ -1,20 +1,25 @@
-"""Dabwayo — a modular, scriptable video rendering engine with an MCP API.
+"""Dabwayo — a modular video engine driven through an MCP tool interface.
 
-Quick start
------------
->>> from dabwayo import Project
->>> p = Project(1280, 720, fps=30, background="#0b0e16")
->>> t = p.track("video")
->>> t.add(Project.text("Hello", size=120), start=0, duration=3).transition_in("fade")
->>> p.render("out.mp4")
+The **supported, primary interface is the MCP tools** (``dabwayo.mcp_server`` /
+the ``dabwayo.mcp_tools`` package): agents and the Studio web author, edit and
+render projects by calling tools, all over one serializable JSON spec. Run it
+with ``python -m dabwayo.mcp_server``.
 
-Everything is driven by a plain JSON spec, so projects are serializable and
-editable by other tools/agents (see ``dabwayo.mcp_server``).
+Everything below (``Project``, ``Timeline``, ``render`` …) is the **low-level
+engine** those tools drive. It stays importable for advanced/embedded use and
+the test suite, but for authoring prefer the MCP tools — they are the single
+place editing logic lives, so the engine and the web never diverge.
+
+    >>> from dabwayo.builder import Project        # low-level engine (advanced)
+    >>> p = Project(1280, 720, fps=30)
+    >>> p.render("out.mp4")
 """
 from __future__ import annotations
 
 # Populate registries via import side effects.
 from . import effects, elements, transitions  # noqa: F401
+# Low-level engine surface — kept importable for advanced/embedded use and the
+# test suite. The MCP tools (dabwayo.mcp_server) are the supported interface.
 from .builder import Clip, Project, Track, keyframes  # noqa: F401
 from .core import (  # noqa: F401
     Anchor, AnimatedProperty, BlendMode, Color, Direction, FitMode,
