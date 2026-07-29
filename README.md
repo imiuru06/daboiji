@@ -73,6 +73,7 @@ Register it with any MCP client (e.g. Claude):
 | `duplicate_clip` · `ripple_delete` | Copy a clip (new id), or delete + close the gap; `ripple` keeps later clips adjacent |
 | `add_captions` · `add_word_captions` · `add_lower_third` | SRT/WebVTT subtitles, word-timed pop-on captions (Reels/Opus-Clip style), or a lower-third title |
 | `list_asr_providers` · `transcribe` · `auto_captions` | Speech-to-text with word timestamps (pluggable, optional); transcribe + caption in one call |
+| `list_tts_providers` · `synthesize_voice` · `add_voiceover` | Text-to-speech narration (pluggable: local/remote/OpenAI/ElevenLabs, optional); synth + add to the mix |
 | `list_comments` · `add_comment` | Read/write timestamped review comments — the shared viewer's feedback, readable by the agent |
 | `list_templates` · `get_template` · `create_from_template` · `batch_from_template` | Fill a `{{placeholder}}` template (text, colours **and media slots**) from data → one project, or one per data row for bulk branded video |
 | `preview_frame` · `filmstrip` · `render_range` | One frame, N evenly-spaced frames (contact sheet / scrub cache), or a time window |
