@@ -13,7 +13,25 @@ from .app import (mcp, _proj, _commit, _deep_merge, _find_track,
                   _clip_summary, _resolve_clip, _new_clip_id)
 
 __all__ = ["list_clips", "update_clip", "remove_clip", "move_clip",
-           "split_clip", "trim_clip"]
+           "split_clip", "trim_clip", "duplicate_clip", "ripple_delete"]
+
+
+def _ripple_shift(track: dict, threshold: float, delta: float,
+                  exclude_id: Optional[str] = None) -> int:
+    """Shift every clip on ``track`` that starts at/after ``threshold`` by
+    ``delta`` seconds (clamped at 0). Used to open/close gaps so downstream
+    clips stay adjacent. Ordering is by time, not list position, so it is
+    robust to unsorted clip lists. Returns how many clips moved."""
+    if not delta:
+        return 0
+    n = 0
+    for c in track.get("clips", []):
+        if exclude_id and c.get("id") == exclude_id:
+            continue
+        if float(c.get("start", 0.0)) >= threshold - 1e-9:
+            c["start"] = max(0.0, float(c.get("start", 0.0)) + delta)
+            n += 1
+    return n
 
 
 def _shift_source_inpoint(clip: dict, delta_timeline: float) -> None:
@@ -110,13 +128,14 @@ def move_clip(project_id: str, track: Optional[str] = None,
 def trim_clip(project_id: str, clip_id: Optional[str] = None,
               track: Optional[str] = None, clip_index: Optional[int] = None,
               new_start: Optional[float] = None,
-              new_end: Optional[float] = None) -> dict:
+              new_end: Optional[float] = None, ripple: bool = False) -> dict:
     """Trim a clip's edges on the timeline (like dragging its left/right handle).
 
     Target it with ``clip_id`` (preferred) or ``track`` + ``clip_index``.
     ``new_start`` / ``new_end`` are absolute timeline seconds; pass either or
-    both (the one you omit is left where it is). This does NOT ripple — it only
-    changes this clip, leaving any gap.
+    both (the one you omit is left where it is). By default this only changes
+    this clip (leaving any gap); set ``ripple`` to also slide every later clip
+    on the same track by the change in this clip's END, so they stay adjacent.
 
     Media stays in sync: moving the head (new_start) advances the clip's *source*
     in-point by the same amount (times its speed for video), so the surviving
@@ -140,8 +159,54 @@ def trim_clip(project_id: str, clip_id: Optional[str] = None,
         _shift_source_inpoint(clip, head_delta)
     clip["start"] = ns
     clip["duration"] = ne - ns
+    rippled = _ripple_shift(tr, old_end, ne - old_end, exclude_id=clip.get("id")) if ripple else 0
     _commit(project_id, spec)
-    return {"ok": True, "clip": _clip_summary(clip, idx)}
+    return {"ok": True, "clip": _clip_summary(clip, idx), "rippled": rippled}
+
+
+@mcp.tool()
+def duplicate_clip(project_id: str, clip_id: Optional[str] = None,
+                   track: Optional[str] = None, clip_index: Optional[int] = None,
+                   start: Optional[float] = None, ripple: bool = False) -> dict:
+    """Duplicate a clip (content, transform, effects and source in-point are
+    copied exactly) and drop the copy on the same track with a NEW id.
+
+    Target the source with ``clip_id`` (preferred) or ``track`` + ``clip_index``.
+    The copy is placed at ``start`` (absolute seconds) or, by default, right
+    after the original. Set ``ripple`` to push every later clip on the track
+    right by the copy's duration first, so the copy is inserted into the flow
+    instead of overlapping what follows. Returns the new clip's id."""
+    spec = _proj(project_id)
+    tr, idx = _resolve_clip(spec, track, clip_index, clip_id)
+    orig = tr["clips"][idx]
+    dup = copy.deepcopy(orig)
+    dup["id"] = _new_clip_id()
+    dur = float(orig.get("duration", 0.0))
+    dup["start"] = (float(orig.get("start", 0.0)) + dur) if start is None else float(start)
+    rippled = _ripple_shift(tr, dup["start"], dur, exclude_id=orig.get("id")) if ripple else 0
+    tr["clips"].insert(idx + 1, dup)
+    _commit(project_id, spec)
+    return {"ok": True, "source_id": orig.get("id", ""), "clip_id": dup["id"],
+            "track": tr.get("name"), "start": dup["start"], "rippled": rippled}
+
+
+@mcp.tool()
+def ripple_delete(project_id: str, clip_id: Optional[str] = None,
+                  track: Optional[str] = None, clip_index: Optional[int] = None) -> dict:
+    """Delete a clip AND close the gap: every later clip on the same track slides
+    left by the removed clip's duration, so the timeline stays gapless.
+
+    Target it with ``clip_id`` (preferred) or ``track`` + ``clip_index``. (Use
+    ``remove_clip`` instead if you want to leave the gap in place.)"""
+    spec = _proj(project_id)
+    tr, idx = _resolve_clip(spec, track, clip_index, clip_id)
+    removed = tr["clips"].pop(idx)
+    gap = float(removed.get("duration", 0.0))
+    removed_end = float(removed.get("start", 0.0)) + gap
+    rippled = _ripple_shift(tr, removed_end, -gap)
+    _commit(project_id, spec)
+    return {"ok": True, "removed": _clip_summary(removed, idx),
+            "remaining": len(tr["clips"]), "rippled": rippled}
 
 
 @mcp.tool()
