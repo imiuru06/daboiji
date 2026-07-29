@@ -80,7 +80,8 @@ Register it with any MCP client (e.g. Claude):
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
 | `add_shot` · `list_shots` · `update_shot` · `remove_shot` · `assemble_storyboard` | Hold a shot-list plan on a project and assemble it into a timeline (the *calling agent* plans; dabwayo assembles) |
-| `create_reference` · `add_reference_variant` · `attach_reference_asset` · `bind_shot` · `resolve_shot` · `generate_shot` | Character/environment **bibles** (outfits/poses; time/lighting/mood/focus) bound to shots; `resolve_shot` composes the request, `generate_shot` runs it through the provider (ADR-0001) |
+| `create_reference` · `add_reference_variant` · `attach_reference_asset` · `bind_shot` · `resolve_shot` · `generate_shot` | Character/environment/**prop bibles** (outfits/poses; time/lighting/mood/focus) bound to shots; `resolve_shot` composes the request, `generate_shot` runs it through the provider (ADR-0001) |
+| `create_storyboard` · `add_scene` · `add_storyboard_shot` · `resolve_storyboard_shot` · `assemble_storyboard_project` | First-class, reusable **storyboard** library — scenes → shots with a **multi-character cast** + environment + props; one plan assembles into many render projects (ADR-0002) |
 | `list_music_sources` · `search_music` · `fetch_music` | Pull royalty-free / CC music straight from provider APIs (Jamendo, Freesound) |
 | `list_storage_backends` · `put_asset` · `asset_url` · `localize_asset` | Pluggable asset-byte storage (local / s3 · R2 · MinIO / gcs): the index stays in the registry, bytes move; portable `{backend, uri}` (ADR-0001) |
 

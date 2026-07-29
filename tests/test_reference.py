@@ -35,6 +35,11 @@ def test_variants_and_refs():
 
 def test_bad_kind_and_id():
     with pytest.raises(ValueError):
-        R.create("prop", "x")
+        R.create("gadget", "x")            # character/environment/prop are valid; this is not
     with pytest.raises(ValueError):
         R.get("character", "../etc/passwd")
+
+
+def test_prop_kind_supported():
+    p = R.create("prop", "Coffee cup", "a ceramic cup")
+    assert p["id"].startswith("prop_") and R.get("prop", p["id"])["name"] == "Coffee cup"

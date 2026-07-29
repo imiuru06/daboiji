@@ -23,8 +23,9 @@ from .service import STORE
 __all__ = ["create", "get", "list_all", "update", "remove",
            "add_variant", "remove_variant", "attach_ref", "detach_ref"]
 
-_KINDS = {"character": "characters", "environment": "environments"}
-_PREFIX = {"character": "char", "environment": "env"}
+_KINDS = {"character": "characters", "environment": "environments",
+          "prop": "props"}
+_PREFIX = {"character": "char", "environment": "env", "prop": "prop"}
 _SAFE = re.compile(r"[A-Za-z0-9_]+")
 
 
