@@ -217,6 +217,11 @@ resolution/duration and any licence attribution. `publish_to_studio` /
 `/api/upload` returns the `watch` path so you can hand an audience a link
 without giving them the editor.
 
+**Creative sheets.** `/sheets` (optionally `?project=<id>`) is a panel to view
+and create character/environment **bibles** and a project's **storyboard** —
+each shot's `resolve` shows the composed prompt + reference images the provider
+will receive. Backed by `/api/references/...` and `/api/projects/<id>/storyboard`.
+
 **Timestamped comments.** On the viewer, anyone can pin a note to the current
 moment; clicking a comment's timecode seeks there. The agent reads that feedback
 back with the `list_comments` tool and edits accordingly — a closed review loop

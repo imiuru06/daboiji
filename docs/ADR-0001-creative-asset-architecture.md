@@ -2,10 +2,10 @@
 
 **Status:** accepted — dabwayo owns model + index + resolution (bytes & ML
 delegated). Phase 1 (reference model + CRUD + shot binding + `resolve_shot`)
-Phase 2 (`generate_shot`: resolve → provider generation → bind back;
-reference-aware `assemble_storyboard`) and Phase 3 (pluggable storage —
-assets carry `{backend, uri}`; local default, s3 opt-in; `put_asset` /
-`localize_asset` / `asset_url`) shipped; phase 4 (Studio UI) pending.
+Phase 2 (`generate_shot`), Phase 3 (pluggable storage — assets carry
+`{backend, uri}`; local default, s3 opt-in) and Phase 4 (Studio UI —
+`/sheets` page + REST for character/environment bibles and storyboard, with
+live `resolve`) all shipped. ADR complete.
 **Context:** Beyond raw media files, dabwayo needs to manage *structured creative
 references* for consistent AI video: **character sheets** (with outfits, poses,
 expressions, multi-angle views), **environment/background sheets** (time of day,

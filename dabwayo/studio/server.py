@@ -116,6 +116,50 @@ def _comments_post(h, m, body):
     return 200, {"ok": True, "comment": rec}, None
 
 
+# -- Creative reference bibles (character / environment) + storyboard --------
+@route("GET", r"/api/references/(character|environment)")
+def _refs_list(h, m, body):
+    return 200, M.list_references(m.group(1)), None
+
+
+@route("POST", r"/api/references/(character|environment)")
+def _refs_create(h, m, body):
+    return 200, M.create_reference(m.group(1), body.get("name", "Untitled"),
+                                   body.get("description", "")), None
+
+
+@route("GET", r"/api/references/(character|environment)/([A-Za-z0-9_]+)")
+def _refs_get(h, m, body):
+    return 200, M.get_reference(m.group(1), m.group(2)), None
+
+
+@route("POST", r"/api/references/(character|environment)/([A-Za-z0-9_]+)/variant")
+def _refs_add_variant(h, m, body):
+    return 200, M.add_reference_variant(
+        m.group(1), m.group(2), body.get("label", "variant"),
+        prompt_fragment=body.get("prompt_fragment", ""),
+        attributes=body.get("attributes"), refs=body.get("refs")), None
+
+
+@route("GET", r"/api/projects/([0-9a-f]+)/storyboard")
+def _sb_list(h, m, body):
+    return 200, M.list_shots(m.group(1)), None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/storyboard")
+def _sb_add(h, m, body):
+    _snapshot(m.group(1))
+    return 200, M.add_shot(m.group(1), prompt=body.get("prompt", ""),
+                           duration=body.get("duration", 4),
+                           mode=body.get("mode", "t2v"),
+                           caption=body.get("caption", "")), None
+
+
+@route("GET", r"/api/projects/([0-9a-f]+)/storyboard/([A-Za-z0-9_]+)/resolve")
+def _sb_resolve(h, m, body):
+    return 200, M.resolve_shot(m.group(1), m.group(2)), None
+
+
 @route("POST", r"/api/upload")
 def _upload(h, m, body):
     """Durable publish: an off-box agent uploads a media file (base64) which is
@@ -372,6 +416,9 @@ class Handler(BaseHTTPRequestHandler):
             # read-only public player; the page resolves the asset id (path tail
             # or ?v=) client-side against /api/assets + /files.
             with open(os.path.join(HERE, "viewer.html"), "rb") as f:
+                return self._send(200, f.read(), "text/html; charset=utf-8")
+        if path in ("/sheets", "/sheets.html"):
+            with open(os.path.join(HERE, "sheets.html"), "rb") as f:
                 return self._send(200, f.read(), "text/html; charset=utf-8")
         if path.startswith("/files/"):
             name = os.path.basename(path[len("/files/"):])

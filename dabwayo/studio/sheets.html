@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>다봐요 · Sheets</title>
+<style>
+  :root{ --bg:#0b0e16; --fg:#eef2fa; --muted:#8b93a7; --card:#141926; --line:#232a3b; --accent:#6aa0ff; }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f4f6fb; --fg:#111726; --muted:#5b647a; --card:#fff; --line:#e3e8f2; --accent:#2f6bff; }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif; padding:22px 18px 60px; }
+  header{ display:flex; align-items:center; gap:10px; max-width:1100px; margin:0 auto 18px; }
+  header .logo{ font-weight:700; } header .badge{ font-size:12px; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:2px 10px; }
+  .grid{ max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:760px){ .grid{ grid-template-columns:1fr; } }
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .panel h2{ font-size:15px; margin:0 0 12px; display:flex; justify-content:space-between; align-items:baseline; }
+  .panel h2 .n{ color:var(--muted); font-weight:400; font-size:12px; }
+  .item{ border-top:1px solid var(--line); padding:10px 0; }
+  .item:first-of-type{ border-top:0; }
+  .item .name{ font-weight:600; }
+  .item .meta{ color:var(--muted); font-size:12px; }
+  .chips{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{ font-size:11.5px; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:1px 8px; }
+  .form{ margin-top:12px; display:flex; gap:6px; flex-wrap:wrap; }
+  input, select{ background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:7px 9px; font:inherit; font-size:13px; }
+  input.grow{ flex:1; min-width:120px; }
+  button{ background:var(--accent); color:#fff; border:0; border-radius:8px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  .full{ grid-column:1 / -1; }
+  .shot{ border-top:1px solid var(--line); padding:10px 0; }
+  .shot .p{ font-size:13.5px; } .shot .meta{ color:var(--muted); font-size:12px; }
+  .resolved{ margin-top:6px; font-size:12.5px; color:var(--muted); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px; white-space:pre-wrap; display:none; }
+  .muted{ color:var(--muted); font-size:13px; }
+  a{ color:var(--accent); }
+</style>
+</head>
+<body>
+  <header>
+    <span class="logo">다봐요</span><span class="badge">Sheets</span>
+    <span class="muted" id="projHint" style="margin-left:auto"></span>
+  </header>
+
+  <div class="grid">
+    <div class="panel" id="charPanel">
+      <h2>캐릭터 <span class="n" id="charN"></span></h2>
+      <div id="charList" class="muted">불러오는 중…</div>
+      <div class="form">
+        <input class="grow" id="charName" placeholder="이름 (예: Mina)">
+        <input class="grow" id="charDesc" placeholder="설명 (예: late-20s, dark bob)">
+        <button onclick="createRef('character')">추가</button>
+      </div>
+    </div>
+
+    <div class="panel" id="envPanel">
+      <h2>환경 <span class="n" id="envN"></span></h2>
+      <div id="envList" class="muted">불러오는 중…</div>
+      <div class="form">
+        <input class="grow" id="envName" placeholder="이름 (예: City apartment)">
+        <input class="grow" id="envDesc" placeholder="설명 (예: high-rise, big windows)">
+        <button onclick="createRef('environment')">추가</button>
+      </div>
+    </div>
+
+    <div class="panel full" id="sbPanel" style="display:none">
+      <h2>스토리보드 <span class="n" id="sbN"></span></h2>
+      <div id="sbList" class="muted">—</div>
+      <div class="form">
+        <input class="grow" id="shotPrompt" placeholder="샷 액션 (예: she looks to the light)">
+        <input id="shotDur" type="number" min="0.5" step="0.5" value="4" style="width:80px" title="duration(s)">
+        <select id="shotMode"><option>t2v</option><option>i2v</option></select>
+        <button onclick="addShot()">샷 추가</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+var PROJECT = new URLSearchParams(location.search).get("project") || "";
+function j(url, opts){ return fetch(url, opts).then(function(r){ return r.ok ? r.json() : Promise.reject(r); }); }
+
+function renderRefs(kind, listId, nId){
+  j("/api/references/" + kind).then(function(d){
+    document.getElementById(nId).textContent = d.count ? "· " + d.count : "";
+    var host = document.getElementById(listId);
+    if(!d.count){ host.className="muted"; host.textContent = "아직 없음 — 아래에서 추가하세요."; return; }
+    host.className=""; host.innerHTML = "";
+    d.references.forEach(function(r){
+      var el = document.createElement("div"); el.className="item";
+      el.innerHTML = '<div class="name"></div><div class="meta"></div>'+
+        '<div class="chips"><span class="chip">variants '+r.variants+'</span><span class="chip">refs '+r.base_refs+'</span></div>';
+      el.querySelector(".name").textContent = r.name || r.id;
+      el.querySelector(".meta").textContent = r.id;
+      host.appendChild(el);
+    });
+  }).catch(function(){ document.getElementById(listId).textContent = "불러오기 실패"; });
+}
+function createRef(kind){
+  var name = document.getElementById(kind==="character"?"charName":"envName").value.trim();
+  var desc = document.getElementById(kind==="character"?"charDesc":"envDesc").value.trim();
+  if(!name) return;
+  j("/api/references/"+kind, {method:"POST", headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({name:name, description:desc})})
+   .then(function(){ document.getElementById(kind==="character"?"charName":"envName").value="";
+     document.getElementById(kind==="character"?"charDesc":"envDesc").value="";
+     renderRefs(kind, kind==="character"?"charList":"envList", kind==="character"?"charN":"envN"); });
+}
+
+function renderStoryboard(){
+  if(!PROJECT) return;
+  document.getElementById("sbPanel").style.display="block";
+  document.getElementById("projHint").textContent = "project " + PROJECT;
+  j("/api/projects/"+PROJECT+"/storyboard").then(function(d){
+    document.getElementById("sbN").textContent = d.count ? "· " + d.count + " shots" : "";
+    var host = document.getElementById("sbList");
+    if(!d.count){ host.className="muted"; host.textContent="샷이 없습니다 — 아래에서 추가하세요."; return; }
+    host.className=""; host.innerHTML="";
+    d.shots.forEach(function(s){
+      var el = document.createElement("div"); el.className="shot";
+      el.innerHTML = '<div class="p"></div><div class="meta">'+ s.mode +' · '+ s.duration +'s'+
+        (s.has_media?' · media✓':'') + ' · <a href="#" class="rz">resolve</a></div><div class="resolved"></div>';
+      el.querySelector(".p").textContent = (s.prompt||"(no prompt)") + (s.caption? "  — caption: "+s.caption : "");
+      var rz = el.querySelector(".resolved");
+      el.querySelector(".rz").onclick = function(e){ e.preventDefault();
+        if(rz.style.display==="block"){ rz.style.display="none"; return; }
+        j("/api/projects/"+PROJECT+"/storyboard/"+s.id+"/resolve").then(function(r){
+          rz.style.display="block";
+          rz.textContent = "prompt: " + (r.prompt||"") + "\nreference_images: " + JSON.stringify(r.reference_images) + "\nmode: " + r.mode;
+        });
+      };
+      host.appendChild(el);
+    });
+  });
+}
+function addShot(){
+  var prompt = document.getElementById("shotPrompt").value.trim();
+  var dur = parseFloat(document.getElementById("shotDur").value)||4;
+  var mode = document.getElementById("shotMode").value;
+  if(!prompt) return;
+  j("/api/projects/"+PROJECT+"/storyboard", {method:"POST", headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({prompt:prompt, duration:dur, mode:mode})})
+   .then(function(){ document.getElementById("shotPrompt").value=""; renderStoryboard(); });
+}
+
+renderRefs("character","charList","charN");
+renderRefs("environment","envList","envN");
+renderStoryboard();
+</script>
+</body>
+</html>
