@@ -1,23 +1,26 @@
+  /* Palette unified with the shared design system (theme.css) — cool-biased
+     neutrals + one cobalt accent. The editor deliberately commits to a single
+     dark "editing-suite" theme (sheets/viewer follow the system + toggle). */
   :root{
-    --bg:#080b11; --panel:#10151f; --panel2:#0d121b; --elev:#161d2b;
-    --line:#212a3c; --line2:#2c3750;
-    --ink:#e9eefb; --mut:#8a99b8; --mut2:#62708d;
-    --acc:#5cc8ff; --acc-ink:#04121f; --brand:#ea1834;
-    --ok:#54e0b0; --warn:#ffcf6b; --danger:#ff7a8a;
-    --r:10px; --r-sm:7px; --r-lg:14px;
+    --bg:#0b0e16; --panel:#121826; --panel2:#0e131f; --elev:#1a2130;
+    --line:#232c3f; --line2:#333f57;
+    --ink:#eef2fa; --mut:#98a2b6; --mut2:#6a7488;
+    --acc:#6a9bff; --acc-ink:#081226; --brand:#6a9bff;
+    --ok:#3fb984; --warn:#e0a83a; --danger:#e5556b;
+    --r:11px; --r-sm:8px; --r-lg:16px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;font:13.5px/1.45 -apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;
        background:var(--bg);color:var(--ink);overflow:hidden}
   ::-webkit-scrollbar{width:9px;height:9px}
-  ::-webkit-scrollbar-thumb{background:#26314a;border-radius:6px}
-  ::-webkit-scrollbar-thumb:hover{background:#33405e}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:#41507a}
   a{color:var(--acc);text-decoration:none}
 
   /* ---------- header ---------- */
   header{display:flex;align-items:center;gap:14px;height:52px;padding:0 16px;
-         border-bottom:1px solid var(--line);background:linear-gradient(180deg,#141a28,#0c1018)}
+         border-bottom:1px solid var(--line);background:var(--panel)}
   .brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.3px}
   .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);box-shadow:0 0 12px var(--brand)}
   .brand b{color:var(--acc)}
@@ -44,7 +47,7 @@
   label:first-child{margin-top:0}
   input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
         border-radius:var(--r-sm);padding:7px 9px;font:inherit;outline:none;transition:.12s}
-  input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(92,200,255,.15)}
+  input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(106,155,255,.20)}
   textarea{resize:vertical;min-height:54px;font-family:ui-monospace,monospace;font-size:12px}
   .row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
   .field{margin-bottom:10px}
@@ -65,7 +68,7 @@
   .tabbar{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--line);background:var(--panel)}
   .tabbtn{flex:1;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--mut);
           padding:9px 4px;font:inherit;font-weight:600;font-size:12.5px;cursor:pointer;border-radius:6px 6px 0 0}
-  .tabbtn:hover{color:var(--ink);background:#131a28}
+  .tabbtn:hover{color:var(--ink);background:var(--elev)}
   .tabbtn.on{color:var(--acc);border-bottom-color:var(--acc)}
   .tabbody{flex:1;overflow:auto;padding:14px}
   .tabpane{display:none}
@@ -88,10 +91,10 @@
          background:rgba(8,11,17,.7);border:1px solid var(--line);padding:3px 9px;border-radius:20px}
   #ovl{position:absolute;inset:0;pointer-events:none;z-index:4}
   .handle{position:absolute;transform:translate(-50%,-50%);min-width:28px;height:28px;padding:0 6px;
-          border-radius:16px;background:rgba(92,200,255,.22);border:2px solid var(--acc);color:#dff3ff;
+          border-radius:16px;background:rgba(106,155,255,.22);border:2px solid var(--acc);color:#e8f0ff;
           display:flex;align-items:center;justify-content:center;font-size:13px;cursor:grab;
           pointer-events:auto;box-shadow:0 0 0 2px rgba(0,0,0,.35),0 2px 10px rgba(0,0,0,.4);user-select:none}
-  .handle:hover{background:rgba(92,200,255,.35)}
+  .handle:hover{background:rgba(106,155,255,.35)}
   .handle:active{cursor:grabbing}
   .handle .lbl{font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .transport{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line);
@@ -114,7 +117,7 @@
   .tl-lane{position:relative;height:34px;background:var(--panel);border:1px solid var(--line);
            border-radius:7px;overflow:hidden}
   .tl-clip{position:absolute;height:24px;border-radius:5px;display:flex;align-items:center;
-           padding:0 9px;font-size:11px;color:#04121f;font-weight:600;cursor:grab;overflow:hidden;
+           padding:0 9px;font-size:11px;color:#081226;font-weight:600;cursor:grab;overflow:hidden;
            box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);transition:filter .1s}
   .tl-clip:active{cursor:grabbing}
   .tl-clip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;flex:1}
@@ -149,7 +152,7 @@
   .chat{display:flex;flex-direction:column;height:100%}
   .chatlog{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;padding:2px}
   .bub{max-width:88%;padding:8px 11px;border-radius:11px;font-size:12.5px;white-space:pre-wrap}
-  .bub.u{align-self:flex-end;background:#1d2b4a;color:#dfe8fb}
+  .bub.u{align-self:flex-end;background:#1d2b4a;color:#e8f0ff}
   .bub.a{align-self:flex-start;background:var(--panel2);border:1px solid var(--line)}
   .chatin{display:flex;gap:8px;margin-top:10px}
   .empty-i{color:var(--mut2);font-size:12.5px;text-align:center;padding:26px 10px}
