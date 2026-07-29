@@ -73,6 +73,7 @@ Register it with any MCP client (e.g. Claude):
 | `duplicate_clip` · `ripple_delete` | Copy a clip (new id), or delete + close the gap; `ripple` keeps later clips adjacent |
 | `add_captions` · `add_word_captions` · `add_lower_third` | SRT/WebVTT subtitles, word-timed pop-on captions (Reels/Opus-Clip style), or a lower-third title |
 | `list_comments` · `add_comment` | Read/write timestamped review comments — the shared viewer's feedback, readable by the agent |
+| `list_templates` · `get_template` · `create_from_template` | Fill a `{{placeholder}}` template with a data dict → a ready-to-render project (branded video at scale) |
 | `preview_frame` · `filmstrip` · `render_range` | One frame, N evenly-spaced frames (contact sheet / scrub cache), or a time window |
 | `render_project` · `render_from_spec` | Render to MP4 (stateful or stateless) |
 | `generate_video` · `list_video_providers` | Generate a clip from a prompt/image and drop it on the timeline |
