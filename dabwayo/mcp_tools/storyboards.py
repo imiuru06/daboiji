@@ -14,8 +14,9 @@ from typing import Optional
 from .app import mcp, _PROJECTS
 
 __all__ = ["create_storyboard", "list_storyboards", "get_storyboard",
-           "update_storyboard", "remove_storyboard", "add_scene",
+           "update_storyboard", "remove_storyboard", "add_scene", "move_scene",
            "add_storyboard_shot", "update_storyboard_shot", "remove_storyboard_shot",
+           "move_storyboard_shot", "storyboard_cast",
            "resolve_storyboard_shot", "assemble_storyboard_project"]
 
 
@@ -71,6 +72,14 @@ def add_scene(storyboard_id: str, name: str = "") -> dict:
 
 
 @mcp.tool()
+def move_scene(storyboard_id: str, scene_id: str, to_index: int) -> dict:
+    """Reorder a scene within the storyboard (0-based ``to_index``)."""
+    from .. import storyboards as _sb
+    _sb.move_scene(storyboard_id, scene_id, to_index)
+    return {"ok": True}
+
+
+@mcp.tool()
 def add_storyboard_shot(storyboard_id: str, scene_id: str, prompt: str = "",
                         duration: float = 4.0, mode: str = "t2v", caption: str = "",
                         cast: Optional[list] = None, environment: Optional[dict] = None,
@@ -101,6 +110,52 @@ def remove_storyboard_shot(storyboard_id: str, shot_id: str) -> dict:
     from .. import storyboards as _sb
     _sb.remove_shot(storyboard_id, shot_id)
     return {"ok": True}
+
+
+@mcp.tool()
+def move_storyboard_shot(storyboard_id: str, shot_id: str,
+                         to_scene_id: Optional[str] = None,
+                         to_index: Optional[int] = None) -> dict:
+    """Reorder a shot within its scene, or move it into another scene
+    (``to_scene_id``), optionally at ``to_index`` (default: append). The shot
+    keeps its id and bindings."""
+    from .. import storyboards as _sb
+    _sb.move_shot(storyboard_id, shot_id, to_scene_id=to_scene_id, to_index=to_index)
+    return {"ok": True}
+
+
+@mcp.tool()
+def storyboard_cast(storyboard_id: str) -> dict:
+    """The cast list for a storyboard — the distinct characters, environments and
+    props it references across all shots, with names and how many shots use each.
+    (Like a production's cast/locations/props breakdown.)"""
+    from .. import storyboards as _sb, reference as _ref
+    rec = _sb.get(storyboard_id)
+    tally = {"character": {}, "environment": {}, "prop": {}}
+    for _, shot in _sb.iter_shots(rec):
+        for m in (shot.get("cast") or []):
+            if m.get("character_id"):
+                tally["character"][m["character_id"]] = tally["character"].get(m["character_id"], 0) + 1
+        eb = shot.get("environment") or {}
+        if eb.get("id"):
+            tally["environment"][eb["id"]] = tally["environment"].get(eb["id"], 0) + 1
+        for pb in (shot.get("props") or []):
+            if pb.get("prop_id"):
+                tally["prop"][pb["prop_id"]] = tally["prop"].get(pb["prop_id"], 0) + 1
+
+    def rows(kind):
+        out = []
+        for rid, n in tally[kind].items():
+            name = rid
+            try:
+                name = _ref.get(kind, rid).get("name", rid)
+            except Exception:  # noqa: BLE001
+                pass
+            out.append({"id": rid, "name": name, "shots": n})
+        return sorted(out, key=lambda x: -x["shots"])
+    return {"ok": True, "storyboard_id": storyboard_id,
+            "characters": rows("character"), "environments": rows("environment"),
+            "props": rows("prop")}
 
 
 def _compose_shot(shot: dict):

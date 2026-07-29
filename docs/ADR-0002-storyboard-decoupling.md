@@ -51,8 +51,8 @@ Backward compatible: the old per-project storyboard tools (`add_shot`,
 ## Phasing
 1. **Store entity + CRUD + scenes + shots (multi-cast/env/props) + resolve +
    assemble-into-project + `prop` kind.** ✅ shipped
-2. Prop-bible generation (`generate_*_sheet` for props), per-project cast list,
-   scene reordering.
+2. Prop-bible generation (`generate_prop_sheet`), cast list (`storyboard_cast`),
+   scene + shot reordering (`move_scene`, `move_storyboard_shot`). ✅ shipped
 3. Studio UI for the storyboard library (scenes board, multi-cast pickers).
 
 ## Scope check

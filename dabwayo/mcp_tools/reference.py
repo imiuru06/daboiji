@@ -15,7 +15,8 @@ from .app import mcp, _proj, _commit
 __all__ = ["create_reference", "list_references", "get_reference",
            "update_reference", "remove_reference", "add_reference_variant",
            "attach_reference_asset", "bind_shot", "resolve_shot", "generate_shot",
-           "generate_character_sheet", "generate_environment_sheet"]
+           "generate_character_sheet", "generate_environment_sheet",
+           "generate_prop_sheet"]
 
 
 @mcp.tool()
@@ -271,3 +272,17 @@ def generate_environment_sheet(environment_id: str, views: Optional[list] = None
     provider, registers the still, and links it to the environment."""
     views = views or ["wide establishing shot", "atmospheric detail shot"]
     return _generate_sheet("environment", environment_id, views, provider, style, base_prompt)
+
+
+@mcp.tool()
+def generate_prop_sheet(prop_id: str, views: Optional[list] = None,
+                        provider: Optional[str] = None,
+                        base_prompt: Optional[str] = None,
+                        style: str = "product reference shot, plain background, no people") -> dict:
+    """Generate reference images for a prop/object and attach them as its
+    ``base_refs``. For each of ``views`` (default a clean product shot + a detail)
+    it composes a prompt (``base_prompt`` or the prop's description + the view +
+    ``style``), generates a frame via the active provider, registers the still,
+    and links it to the prop."""
+    views = views or ["clean product shot", "close-up detail shot"]
+    return _generate_sheet("prop", prop_id, views, provider, style, base_prompt)

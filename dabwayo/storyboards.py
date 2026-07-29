@@ -23,8 +23,8 @@ from typing import List, Optional
 from .service import STORE
 
 __all__ = ["create", "get", "list_all", "update", "remove",
-           "add_scene", "remove_scene", "iter_shots",
-           "add_shot", "update_shot", "remove_shot", "new_shot"]
+           "add_scene", "remove_scene", "move_scene", "iter_shots",
+           "add_shot", "update_shot", "remove_shot", "move_shot", "new_shot"]
 
 _SAFE = re.compile(r"[A-Za-z0-9_]+")
 
@@ -111,6 +111,18 @@ def remove_scene(sid: str, scene_id: str) -> dict:
     return _write(rec)
 
 
+def move_scene(sid: str, scene_id: str, to_index: int) -> dict:
+    """Reorder a scene to ``to_index`` within the storyboard."""
+    rec = get(sid)
+    scenes = rec.get("scenes", [])
+    idx = next((i for i, s in enumerate(scenes) if s.get("id") == scene_id), None)
+    if idx is None:
+        raise ValueError(f"scene not found: {scene_id}")
+    sc = scenes.pop(idx)
+    scenes.insert(max(0, min(int(to_index), len(scenes))), sc)
+    return _write(rec)
+
+
 def _find_scene(rec: dict, scene_id: str):
     for s in rec.get("scenes", []):
         if s.get("id") == scene_id:
@@ -174,4 +186,17 @@ def remove_shot(sid: str, shot_id: str) -> dict:
     rec = get(sid)
     scene, i, _ = _find_shot(rec, shot_id)
     scene["shots"].pop(i)
+    return _write(rec)
+
+
+def move_shot(sid: str, shot_id: str, to_scene_id: Optional[str] = None,
+              to_index: Optional[int] = None) -> dict:
+    """Reorder a shot within its scene, or move it into another scene (append,
+    or at ``to_index``). The shot keeps its id."""
+    rec = get(sid)
+    scene, i, shot = _find_shot(rec, shot_id)
+    scene["shots"].pop(i)
+    dest = _find_scene(rec, to_scene_id) if to_scene_id else scene
+    ti = len(dest["shots"]) if to_index is None else max(0, min(int(to_index), len(dest["shots"])))
+    dest["shots"].insert(ti, shot)
     return _write(rec)

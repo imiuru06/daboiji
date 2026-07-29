@@ -43,3 +43,24 @@ def test_one_storyboard_assembles_into_many_projects():
     assert p1 != p2                                    # plan reused, outputs separate
     assert M.get_storyboard(sb["id"])["storyboard"]["id"] == sb["id"]   # plan still in store
     assert M.estimate(p1)["duration"] == 1.0
+
+
+def test_cast_tally_and_reordering():
+    a = M.create_reference("character", "A", "a")["reference"]
+    b = M.create_reference("character", "B", "b")["reference"]
+    sb = M.create_storyboard("p2")["storyboard"]
+    s1 = M.add_scene(sb["id"], "one")["scene"]
+    s2 = M.add_scene(sb["id"], "two")["scene"]
+    sh1 = M.add_storyboard_shot(sb["id"], s1["id"], prompt="x",
+                                cast=[{"character_id": a["id"]}, {"character_id": b["id"]}])["shot_id"]
+    M.add_storyboard_shot(sb["id"], s2["id"], prompt="y", cast=[{"character_id": a["id"]}])
+    cast = M.storyboard_cast(sb["id"])
+    assert {c["name"]: c["shots"] for c in cast["characters"]} == {"A": 2, "B": 1}
+    # reorder scenes
+    M.move_scene(sb["id"], s2["id"], 0)
+    order = [s["id"] for s in M.get_storyboard(sb["id"])["storyboard"]["scenes"]]
+    assert order == [s2["id"], s1["id"]]
+    # move a shot across scenes
+    M.move_storyboard_shot(sb["id"], sh1, to_scene_id=s2["id"])
+    scmap = {s["id"]: [x["id"] for x in s["shots"]] for s in M.get_storyboard(sb["id"])["storyboard"]["scenes"]}
+    assert sh1 in scmap[s2["id"]] and scmap[s1["id"]] == []
