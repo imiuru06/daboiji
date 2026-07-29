@@ -14,7 +14,8 @@ from .app import mcp, _proj, _commit
 
 __all__ = ["create_reference", "list_references", "get_reference",
            "update_reference", "remove_reference", "add_reference_variant",
-           "attach_reference_asset", "bind_shot", "resolve_shot", "generate_shot"]
+           "attach_reference_asset", "bind_shot", "resolve_shot", "generate_shot",
+           "generate_character_sheet"]
 
 
 @mcp.tool()
@@ -199,3 +200,52 @@ def generate_shot(project_id: str, shot_id: str, provider: Optional[str] = None,
     return {"ok": True, "shot_id": shot_id, "path": res.get("path"),
             "asset_id": res.get("asset_id"), "provider": res.get("provider"),
             "prompt": prompt, "mode": mode, "used_image": image}
+
+
+@mcp.tool()
+def generate_character_sheet(character_id: str, angles: Optional[list] = None,
+                             provider: Optional[str] = None,
+                             base_prompt: Optional[str] = None,
+                             style: str = "character reference sheet, neutral studio background") -> dict:
+    """Generate multi-angle reference images for a character and attach them as
+    its ``base_refs`` — the 'cast database' identity sheet.
+
+    For each of ``angles`` (default front / 3-4 / profile / back) it composes a
+    prompt (``base_prompt`` or the character's description + the angle + ``style``),
+    generates a frame via the active video provider, registers it as a
+    reference-image asset, and links it to the character. The provider does the
+    imagery/consistency; dabwayo composes, extracts the still, indexes and
+    attaches. Returns the created reference assets."""
+    import os
+    import imageio.v2 as imageio
+    from .. import reference as _ref, assets as _assets
+    from .generation import generate_video as _gv
+    from .app import _OUTPUT_DIR
+
+    char = _ref.get("character", character_id)          # validates existence
+    desc = base_prompt or char.get("description") or char.get("name", "a character")
+    angles = angles or ["front view", "three-quarter left view",
+                        "left profile view", "back view"]
+    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    created = []
+    for i, angle in enumerate(angles):
+        prompt = f"{desc}, {angle}, {style}"
+        res = _gv("__sheet__", prompt, mode="t2v", duration=1.0,
+                  provider=provider, add_to_timeline=False)
+        # extract the first frame as the still reference image
+        png = os.path.join(_OUTPUT_DIR, f"sheet_{character_id}_{i:02d}.png")
+        try:
+            rdr = imageio.get_reader(res["path"])
+            imageio.imwrite(png, rdr.get_data(0))
+            rdr.close()
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": f"frame extract failed: {e}", "created": created}
+        ast = _assets.register(png, kind="image", role="reference",
+                               source={"action": "character_sheet",
+                                       "provider": res.get("provider"),
+                                       "prompt": prompt,
+                                       "params": {"character": character_id, "angle": angle}})
+        _ref.attach_ref("character", character_id, ast["id"])
+        created.append({"angle": angle, "asset_id": ast["id"], "path": png})
+    return {"ok": True, "character_id": character_id, "count": len(created),
+            "provider": provider or "auto", "refs": created}
