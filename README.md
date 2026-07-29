@@ -72,6 +72,7 @@ Register it with any MCP client (e.g. Claude):
 | `split_clip` · `trim_clip` | Split a clip in two at a time, or trim its head/tail — media source stays frame-synced |
 | `duplicate_clip` · `ripple_delete` | Copy a clip (new id), or delete + close the gap; `ripple` keeps later clips adjacent |
 | `add_captions` · `add_word_captions` · `add_lower_third` | SRT/WebVTT subtitles, word-timed pop-on captions (Reels/Opus-Clip style), or a lower-third title |
+| `list_asr_providers` · `transcribe` · `auto_captions` | Speech-to-text with word timestamps (pluggable, optional); transcribe + caption in one call |
 | `list_comments` · `add_comment` | Read/write timestamped review comments — the shared viewer's feedback, readable by the agent |
 | `list_templates` · `get_template` · `create_from_template` | Fill a `{{placeholder}}` template with a data dict → a ready-to-render project (branded video at scale) |
 | `preview_frame` · `filmstrip` · `render_range` | One frame, N evenly-spaced frames (contact sheet / scrub cache), or a time window |
@@ -102,6 +103,22 @@ fetch_music("hopeful emotional piano", pick=0)     # downloads + registers the t
 > `attribution` string — verify terms (attribution / commercial use) before
 > publishing. Pixabay music is intentionally **not** wired up: it has no
 > official music REST API, so programmatic use would mean scraping.
+
+## Speech-to-text captions (`auto_captions`)
+ASR is **pluggable and optional**, mirroring the video-gen providers. Configure
+one and captions can be generated straight from audio; skip it and author
+word-timed captions from your own list with `add_word_captions`.
+
+| Provider | Needs | Notes |
+|----------|-------|-------|
+| `local` | `pip install faster-whisper` (or openai-whisper) | On-box, no network; model via `DABWAYO_ASR_MODEL` |
+| `remote` | `DABWAYO_ASR_URL` | Your own Whisper HTTP server (`POST /transcribe` → words) |
+| `openai` | `OPENAI_API_KEY` | Hosted Whisper with word timestamps |
+
+Selection is automatic (`DABWAYO_ASR_URL` → remote; else an `OPENAI_API_KEY`;
+else local if installed), or force it with `DABWAYO_ASR_PROVIDER` / `provider=`.
+`auto_captions(project_id, audio_path)` transcribes and lays word-timed pop-on
+captions in one call; `transcribe(audio_path)` returns `{text, language, words}`.
 
 ## Generative video (text→video / image→video)
 `generate_video` turns a prompt (t2v) or a still image (i2v) into a short MP4
