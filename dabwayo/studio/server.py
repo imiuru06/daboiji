@@ -166,6 +166,22 @@ def _refs_attach(h, m, body):
                                          variant_id=body.get("variant_id")), None
 
 
+@route("DELETE", r"/api/references/(character|environment)/([A-Za-z0-9_]+)")
+def _refs_delete(h, m, body):
+    return 200, M.remove_reference(m.group(1), m.group(2)), None
+
+
+@route("POST", r"/api/references/(character|environment)/([A-Za-z0-9_]+)/detach")
+def _refs_detach(h, m, body):
+    return 200, M.detach_reference_asset(m.group(1), m.group(2), body["asset_id"],
+                                         variant_id=body.get("variant_id")), None
+
+
+@route("DELETE", r"/api/references/(character|environment)/([A-Za-z0-9_]+)/variant/([A-Za-z0-9_]+)")
+def _refs_del_variant(h, m, body):
+    return 200, M.remove_reference_variant(m.group(1), m.group(2), m.group(3)), None
+
+
 @route("POST", r"/api/references/(character|environment)/([A-Za-z0-9_]+)/sheet")
 def _ref_sheet(h, m, body):
     if m.group(1) == "character":

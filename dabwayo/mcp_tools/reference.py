@@ -14,7 +14,8 @@ from .app import mcp, _proj, _commit
 
 __all__ = ["create_reference", "list_references", "get_reference",
            "update_reference", "remove_reference", "add_reference_variant",
-           "attach_reference_asset", "bind_shot", "resolve_shot", "generate_shot",
+           "attach_reference_asset", "detach_reference_asset",
+           "remove_reference_variant", "bind_shot", "resolve_shot", "generate_shot",
            "generate_character_sheet", "generate_environment_sheet",
            "generate_prop_sheet"]
 
@@ -61,6 +62,24 @@ def remove_reference(entity_type: str, reference_id: str) -> dict:
     """Delete a character/environment from the library."""
     from .. import reference as _ref
     return {"ok": _ref.remove(entity_type, reference_id)}
+
+
+@mcp.tool()
+def detach_reference_asset(entity_type: str, reference_id: str, asset_id: str,
+                           variant_id: Optional[str] = None) -> dict:
+    """Detach a reference-image asset from an entity's base refs (or, with
+    ``variant_id``, from that variant). The asset itself is not deleted."""
+    from .. import reference as _ref
+    return {"ok": True, "reference": _ref.detach_ref(entity_type, reference_id,
+                                                     asset_id, variant_id)}
+
+
+@mcp.tool()
+def remove_reference_variant(entity_type: str, reference_id: str, variant_id: str) -> dict:
+    """Remove a variant (outfit/pose/lighting…) from a character/environment."""
+    from .. import reference as _ref
+    return {"ok": True, "reference": _ref.remove_variant(entity_type, reference_id,
+                                                         variant_id)}
 
 
 @mcp.tool()
