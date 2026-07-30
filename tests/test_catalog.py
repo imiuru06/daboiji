@@ -60,6 +60,75 @@ def test_catalog_registered_as_tool():
     assert "list_tools_catalog" in names
 
 
+# --------------------------------------------------------------------------
+# Retrieval quality — bilingual (EN + 한국어) intent -> expected tool.
+# This is the measurable "is it good?" check, not a vibe.
+# --------------------------------------------------------------------------
+_INTENTS = [
+    # (natural-language query, expected tool)  -- Korean
+    ("배경 흐리게", "set_focus"),
+    ("피사체만 초점 맞추고 배경 아웃포커싱", "set_focus"),
+    ("로고가 통통 튀게", "animate_clip"),
+    ("클립 흔들리게", "animate_clip"),
+    ("카메라 밀고 들어가", "camera_move"),
+    ("음악 내레이션 밑에서 줄여", "duck_audio"),
+    ("여러 자막 나란히 정렬", "align_clips"),
+    ("워터마크 지워", "remove_watermark"),
+    ("영상 내보내", "render_project"),
+    ("배경음악 받아와", "fetch_music"),
+    ("클립 둘로 나누기", "split_clip"),
+    ("말풍선 넣어", "add_callout"),
+    # -- English
+    ("blur the background", "set_focus"),
+    ("make the logo bounce", "animate_clip"),
+    ("slow push in on the frame", "camera_move"),
+    ("duck the music under the voiceover", "duck_audio"),
+    ("distribute the callouts evenly", "align_clips"),
+    ("remove the watermark", "remove_watermark"),
+    ("export the final video", "render_project"),
+    ("add a speech bubble", "add_callout"),
+    # -- fallback (no curated alias -> must still hit via name/summary)
+    ("filmstrip", "filmstrip"),
+    ("estimate render time", "estimate"),
+]
+
+
+def _ranked(query):
+    r = D.list_tools_catalog(query=query)
+    return [t["name"] for cat in r["categories"] for t in cat["tools"]]
+
+
+def test_retrieval_recall_at_k_bilingual():
+    r1 = r3 = 0
+    misses = []
+    for q, want in _INTENTS:
+        ranked = _ranked(q)
+        if ranked[:1] == [want]:
+            r1 += 1
+        if want in ranked[:3]:
+            r3 += 1
+        else:
+            misses.append((q, want, ranked[:3]))
+    n = len(_INTENTS)
+    # recall@3 must be perfect; recall@1 strong. Fail loudly with the misses.
+    assert r3 == n, f"recall@3 {r3}/{n}; misses={misses}"
+    assert r1 / n >= 0.8, f"recall@1 {r1}/{n} below 0.8"
+
+
+def test_results_are_ranked_with_scores():
+    r = D.list_tools_catalog(query="duck music under voiceover")
+    cats = r["categories"]
+    # top category is the best match; its top tool is duck_audio
+    assert cats[0]["tools"][0]["name"] == "duck_audio"
+    assert cats[0]["tools"][0]["use_when"]                     # use_when surfaced
+    # categories ordered by best score, tools ranked within each category
+    cat_best = [max(t["score"] for t in c["tools"]) for c in cats]
+    assert cat_best == sorted(cat_best, reverse=True)
+    for c in cats:
+        s = [t["score"] for t in c["tools"]]
+        assert s == sorted(s, reverse=True)
+
+
 def test_new_tool_auto_appears_in_catalog():
     """The catalog derives membership from modules, so any registered tool is
     present without touching the catalog — proves the no-drift property."""

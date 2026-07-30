@@ -74,6 +74,17 @@ finding tools, explicitly not a call-order it prescribes. This is the in-scope
 answer to "how do agents use many tools well" — richer retrieval metadata, not
 a relationship graph that would drift toward being a planner.
 
+The lever for search *quality* is the searched *content*, not a search engine:
+a tool's English name rarely contains the word a caller types. So high-traffic
+/ high-divergence tools carry curated **bilingual aliases (English + 한국어)**
+plus a "use when" phrase; `query` scores name > aliases > use_when > summary >
+tags (token-level, bidirectional-substring so light KO inflection / EN plurals
+still hit) and returns results **ranked** with a `score`. Measured on a 22-item
+bilingual intent set (`tests/test_catalog.py`): **recall@1 = 95%, recall@3 =
+100%**. A dabwayo-side embedding/semantic engine was deliberately NOT built —
+it adds an ML dependency and duplicates the client's own semantic search;
+deferred until a no-semantic-client environment actually appears.
+
 ## On preemptive scope (why animate_clip, not the rest)
 Building ahead of a concrete request is warranted only through a filter — a
 candidate must be (1) a pure deterministic compilation over existing
