@@ -81,9 +81,23 @@ plus a "use when" phrase; `query` scores name > aliases > use_when > summary >
 tags (token-level, bidirectional-substring so light KO inflection / EN plurals
 still hit) and returns results **ranked** with a `score`. Measured on a 22-item
 bilingual intent set (`tests/test_catalog.py`): **recall@1 = 95%, recall@3 =
-100%**. A dabwayo-side embedding/semantic engine was deliberately NOT built —
-it adds an ML dependency and duplicates the client's own semantic search;
-deferred until a no-semantic-client environment actually appears.
+100%, MRR = 0.97**. A dabwayo-side embedding/semantic engine was deliberately
+NOT built — it adds an ML dependency and duplicates the client's own semantic
+search; deferred until a no-semantic-client environment actually appears.
+
+**New tools auto-cover, curated aliases extend out-of-band.** Because scoring
+folds in name + summary + tags, a newly added tool is retrievable the instant
+it is registered, with zero curation — the eval asserts **100% of tools are
+findable by their own name** (only 3 name-collision near-misses rank #2, e.g.
+`move_clip` vs `remove_clip`). Curated bilingual synonyms are pure enrichment
+on top; they can be extended without a code change via a JSON overlay
+(`DABWAYO_TOOL_ALIASES`), the deterministic seam where an offline job — or a
+future *optional/pluggable* LLM alias-suggester (same provider pattern as
+generation/ASR/TTS) — could write suggestions. `list_tools_catalog` reports
+`alias_coverage` so the curation backlog is visible. Guardrails against
+over-aliasing: alias count is free, but *generic* aliases hurt precision, so
+generic terms live in tags (weight 1) not tool aliases (weight 4), and the
+MRR≥0.9 assertion fails if aliases drift generic.
 
 ## On preemptive scope (why animate_clip, not the rest)
 Building ahead of a concrete request is warranted only through a filter — a

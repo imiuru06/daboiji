@@ -7,6 +7,8 @@ tool retrieval land on the right tool faster; it deliberately does NOT plan or
 sequence calls — that intelligence stays with the agent (scope: ADR-0003)."""
 from __future__ import annotations
 
+import json
+import os
 import re
 from typing import Optional
 
@@ -156,17 +158,51 @@ _TOOL_META = {
 }
 
 
+# Optional external alias overlay: a JSON file
+# ``{tool_name: {"aliases": [...], "use_when": "..."}}`` at the path in the
+# DABWAYO_TOOL_ALIASES env var. It EXTENDS the curated table above without a
+# code change, so aliases can be accumulated out-of-band — e.g. an offline job
+# (or a future pluggable LLM alias-suggester) writes suggestions here and they
+# take effect on next call. Deterministic: no model runs in-process.
+_ALIAS_OVERLAY_ENV = "DABWAYO_TOOL_ALIASES"
+
+
+def _merged_meta() -> dict:
+    """Curated ``_TOOL_META`` merged with the external overlay (aliases are
+    unioned preserving order; overlay ``use_when`` wins when present)."""
+    merged = {k: {"aliases": list(v.get("aliases", [])),
+                  "use_when": v.get("use_when", "")}
+              for k, v in _TOOL_META.items()}
+    path = os.environ.get(_ALIAS_OVERLAY_ENV)
+    if path and os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                overlay = json.load(f)
+        except (OSError, ValueError):
+            overlay = {}
+        for name, info in (overlay or {}).items():
+            tgt = merged.setdefault(name, {"aliases": [], "use_when": ""})
+            for a in info.get("aliases", []):
+                if a not in tgt["aliases"]:
+                    tgt["aliases"].append(a)
+            if info.get("use_when"):
+                tgt["use_when"] = info["use_when"]
+    return merged
+
+
 def _tokens(s: str):
     return [t for t in re.split(r"[^0-9a-z가-힣]+", s.lower()) if len(t) >= 2]
 
 
-def _score(query: str, name: str, summary: str, cat: str, tags) -> float:
+def _score(query: str, name: str, summary: str, cat: str, tags,
+           meta: dict) -> float:
     """Relevance of a tool to ``query`` (0 = no match). Weights name > aliases
     > use_when > summary > tags/category. Token-level with bidirectional
-    substring so light KO inflection / EN plurals still hit."""
-    meta = _TOOL_META.get(name, {})
-    aliases = [a.lower() for a in meta.get("aliases", [])]
-    use_when = meta.get("use_when", "").lower()
+    substring so light KO inflection / EN plurals still hit. New/uncurated
+    tools still score via name + summary + tags (never invisible)."""
+    m = meta.get(name, {})
+    aliases = [a.lower() for a in m.get("aliases", [])]
+    use_when = m.get("use_when", "").lower()
     name_l, sum_l, cat_l = name.lower(), summary.lower(), cat.lower()
     tags_l = [t.lower() for t in tags]
     q = query.lower().strip()
@@ -259,20 +295,26 @@ def list_tools_catalog(category: Optional[str] = None,
     otherwise they follow the authoring flow. Orientation only — it does not
     decide call order; that is the caller's judgment."""
     cat = _catalog()
+    meta = _merged_meta()
     q = (query or "").strip()
     result = []
     total = 0
+    all_names, curated = [], 0
     flow_order = [s for s, _ in _FLOW]
     for name, info in cat.items():
+        for t in info["tools"]:
+            all_names.append(t["name"])
+            if meta.get(t["name"], {}).get("aliases"):
+                curated += 1
         if category and name != category:
             continue
         if stage and info["stage"] != stage:
             continue
         tools = []
         for t in info["tools"]:
-            entry = {**t, "use_when": _TOOL_META.get(t["name"], {}).get("use_when", "")}
+            entry = {**t, "use_when": meta.get(t["name"], {}).get("use_when", "")}
             if q:
-                sc = _score(q, t["name"], t["summary"], name, info["tags"])
+                sc = _score(q, t["name"], t["summary"], name, info["tags"], meta)
                 if sc <= 0:
                     continue
                 entry["score"] = round(sc, 1)
@@ -297,6 +339,10 @@ def list_tools_catalog(category: Optional[str] = None,
         "total_tools": total,
         "categories": result,
         "flow": [{"stage": s, "categories": cs} for s, cs in _FLOW],
+        "alias_coverage": {"curated": curated, "total": len(all_names),
+                           "note": "uncurated tools still match by name/summary/"
+                                   "tags; extend via the DABWAYO_TOOL_ALIASES "
+                                   "overlay or _TOOL_META."},
         "note": "Descriptive map for tool retrieval; call order is the "
                 "caller's decision, not implied by the flow.",
     }

@@ -1,4 +1,6 @@
 """Tests for list_tools_catalog — the descriptive, searchable tool catalog."""
+import json
+
 from dabwayo.mcp_tools import discovery as D
 
 
@@ -113,6 +115,57 @@ def test_retrieval_recall_at_k_bilingual():
     # recall@3 must be perfect; recall@1 strong. Fail loudly with the misses.
     assert r3 == n, f"recall@3 {r3}/{n}; misses={misses}"
     assert r1 / n >= 0.8, f"recall@1 {r1}/{n} below 0.8"
+
+
+def test_retrieval_precision_mrr():
+    """MRR guards against over-aliasing: if generic aliases push wrong tools
+    above the right one, mean reciprocal rank drops even when recall holds."""
+    total = 0.0
+    for q, want in _INTENTS:
+        ranked = _ranked(q)
+        rank = ranked.index(want) + 1 if want in ranked else 0
+        total += (1.0 / rank) if rank else 0.0
+    mrr = total / len(_INTENTS)
+    assert mrr >= 0.9, f"MRR {mrr:.3f} < 0.9 — aliases may be too generic"
+
+
+def test_every_tool_findable_by_its_own_name():
+    """No registered tool is ever invisible — the fallback (name/summary/tags)
+    guarantees a new tool is retrievable the moment it is added, with zero
+    curation. This is the 'auto-coverage' property."""
+    c = D.list_tools_catalog()
+    names = [t["name"] for cat in c["categories"] for t in cat["tools"]]
+    invisible, not_top = [], []
+    for n in names:
+        ranked = _ranked(n.replace("_", " "))
+        if n not in ranked:
+            invisible.append(n)
+        elif ranked[0] != n:
+            not_top.append((n, ranked[0]))
+    assert not invisible, f"invisible tools: {invisible}"
+    # the vast majority should also rank #1 by their own name
+    assert len(not_top) <= len(names) * 0.15, f"not top-1: {not_top}"
+
+
+def test_alias_coverage_reported():
+    cov = D.list_tools_catalog()["alias_coverage"]
+    assert cov["total"] >= 100
+    assert 0 < cov["curated"] <= cov["total"]
+
+
+def test_external_alias_overlay_extends_without_code_change(tmp_path, monkeypatch):
+    # a KO alias that exists nowhere in code
+    before = _ranked("썸네일 스트립")
+    assert "filmstrip" not in before
+    ov = tmp_path / "aliases.json"
+    ov.write_text(json.dumps({"filmstrip": {
+        "aliases": ["썸네일 스트립", "thumbnail strip"],
+        "use_when": "strip of thumbnails / 썸네일 띠"}}), encoding="utf-8")
+    monkeypatch.setenv("DABWAYO_TOOL_ALIASES", str(ov))
+    after = _ranked("썸네일 스트립")
+    assert after and after[0] == "filmstrip"          # overlay took effect
+    cov = D.list_tools_catalog()["alias_coverage"]
+    assert cov["curated"] >= 1
 
 
 def test_results_are_ranked_with_scores():
