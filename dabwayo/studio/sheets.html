@@ -32,6 +32,14 @@
   .hint{ color:var(--fg-faint); font-size:var(--t-xs); margin-top:6px; }
   .dropzone{ border:1.5px dashed transparent; border-radius:var(--radius-sm); padding:4px; transition:.12s; }
   .dropzone.dragover{ border-color:var(--accent); background:var(--accent-weak); }
+  .refwrap{ position:relative; display:inline-block; }
+  .refwrap .refx{ position:absolute; top:2px; right:2px; width:20px; height:20px; line-height:18px;
+    padding:0; border:none; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; font-size:12px;
+    cursor:pointer; opacity:0; transition:.12s; }
+  .refwrap:hover .refx{ opacity:1; }
+  .vrow{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .vdel,.refdel{ color:#c0392b; }
+  .danger-zone{ margin-top:18px; padding-top:12px; border-top:1px solid var(--line, #e4e4ec); }
 </style>
 </head>
 <body>
@@ -132,12 +140,14 @@ function openDetail(kind, id){
   j("/api/references/"+kind+"/"+id).then(function(res){
     var r = res.reference, d = document.getElementById("detail"); d.style.display="block";
     var isChar = kind==="character";
-    var baseimgs = (r.base_refs||[]).map(function(a){return '<img src="/api/assets/'+a+'/file" alt="">';}).join("") || '<span class="empty">비어있음</span>';
+    var baseimgs = (r.base_refs||[]).map(function(a){return '<span class="refwrap"><img src="/api/assets/'+a+'/file" alt=""><button class="refx" title="레퍼런스 제거" onclick="detachRef(\''+kind+'\',\''+r.id+'\',\''+a+'\')">✕</button></span>';}).join("") || '<span class="empty">비어있음</span>';
     var variants = (r.variants||[]).map(function(v){
       var attrs = ["kind","time_of_day","lighting","mood","focus"].filter(function(k){return v[k];})
         .map(function(k){return '<span class="chip">'+esc(k)+': '+esc(v[k])+'</span>';}).join(" ");
-      var refimgs = (v.refs||[]).map(function(a){return '<img src="/api/assets/'+a+'/file" alt="">';}).join("") || '<span class="empty"></span>';
-      return '<div class="variant"><div class="vh"></div><div class="vf"></div>'+
+      var refimgs = (v.refs||[]).map(function(a){return '<span class="refwrap"><img src="/api/assets/'+a+'/file" alt=""><button class="refx" title="제거" onclick="detachRef(\''+kind+'\',\''+r.id+'\',\''+a+'\',\''+v.id+'\')">✕</button></span>';}).join("") || '<span class="empty"></span>';
+      return '<div class="variant"><div class="vrow"><div class="vh"></div>'+
+             '<button class="btn--ghost btn vdel" title="변형 삭제" onclick="delVariant(\''+kind+'\',\''+r.id+'\',\''+v.id+'\')">삭제</button></div>'+
+             '<div class="vf"></div>'+
              (attrs?'<div class="row" style="margin-top:6px">'+attrs+'</div>':'')+
              '<div class="refs">'+refimgs+'</div></div>';
     });
@@ -158,6 +168,9 @@ function openDetail(kind, id){
         '<input class="grow" id="vFrag" placeholder="prompt fragment (예: in a grey knit sweater)">'+
         '<input class="grow" id="vAttr" placeholder="attrs json (예: {&quot;time_of_day&quot;:&quot;dawn&quot;})">'+
         '<button class="btn" onclick="addVariant(\''+kind+'\',\''+r.id+'\')">변형 추가</button>'+
+      '</div>'+
+      '<div class="row danger-zone">'+
+        '<button class="btn--ghost btn refdel" onclick="deleteRef(\''+kind+'\',\''+r.id+'\')">🗑 '+(isChar?'캐릭터':'환경')+' 삭제</button>'+
       '</div>';
     d.querySelector("h2").textContent = r.name || r.id;
     d.querySelector("p.muted").textContent = r.description || "";
@@ -207,6 +220,21 @@ function attachRef(kind,id){
   var aid=document.getElementById("attachAid").value.trim(); if(!aid) return;
   j("/api/references/"+kind+"/"+id+"/attach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset_id:aid})})
     .then(function(){ openDetail(kind,id); renderRefs(kind); }).catch(function(){ alert("첨부 실패 — 에셋 id를 확인하세요."); });
+}
+function detachRef(kind,id,aid,vid){
+  var b={asset_id:aid}; if(vid) b.variant_id=vid;
+  j("/api/references/"+kind+"/"+id+"/detach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)})
+    .then(function(){ openDetail(kind,id); renderRefs(kind); }).catch(function(){ alert("제거 실패."); });
+}
+function delVariant(kind,id,vid){
+  if(!confirm("이 변형을 삭제할까요?")) return;
+  j("/api/references/"+kind+"/"+id+"/variant/"+vid,{method:"DELETE"})
+    .then(function(){ openDetail(kind,id); renderRefs(kind); }).catch(function(){ alert("변형 삭제 실패."); });
+}
+function deleteRef(kind,id){
+  if(!confirm("이 "+(kind==="character"?"캐릭터":"환경")+"를 완전히 삭제할까요? (되돌릴 수 없어요)")) return;
+  j("/api/references/"+kind+"/"+id,{method:"DELETE"})
+    .then(function(){ document.getElementById("detail").style.display="none"; renderRefs(kind); }).catch(function(){ alert("삭제 실패."); });
 }
 function genSheet(kind,id){
   var b=document.getElementById("genBtn"); b.disabled=true; b.textContent="생성 중…";
