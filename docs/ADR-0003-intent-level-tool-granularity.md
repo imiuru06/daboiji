@@ -60,6 +60,20 @@ The named vocabularies are published from `capabilities()`
 (`camera_moves`, `motion_presets`, `layout_modes`) and one source of truth in
 `core/presets.py`, so agents discover them.
 
+### Discovery at scale — `list_tools_catalog`
+As the surface grew (now ~100 tools), "pick the right tool" splits into two
+problems: **retrieval** (get the right tool into the agent's hands) and
+**orchestration** (sequence the calls). Orchestration is the caller's job, not
+dabwayo's (no planner — same scope line). Retrieval is handled client-side by
+progressive tool search; dabwayo's contribution is to make that search land,
+via `list_tools_catalog(query|category|stage)` — every tool grouped by
+category with a one-line purpose (derived from its docstring — no drift), tags,
+and a descriptive authoring-flow stage (discover→plan→source→author→arrange→
+sound→polish→review→deliver). It is **descriptive metadata only**: a map for
+finding tools, explicitly not a call-order it prescribes. This is the in-scope
+answer to "how do agents use many tools well" — richer retrieval metadata, not
+a relationship graph that would drift toward being a planner.
+
 ## On preemptive scope (why animate_clip, not the rest)
 Building ahead of a concrete request is warranted only through a filter — a
 candidate must be (1) a pure deterministic compilation over existing

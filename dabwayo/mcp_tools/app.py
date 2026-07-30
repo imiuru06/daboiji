@@ -157,7 +157,8 @@ Intent-level shortcuts (prefer these over hand-writing keyframes):
   align_clips(pid,"center"|"distribute_h"|"grid", clip_ids=[...])  layout
   duck_audio(pid, under=[vo_ids])  dip music under narration
 Use get_capabilities() for element/effect/transition names + camera_moves /
-layout_modes.
+motion_presets / layout_modes. Use list_tools_catalog(query=...) to find the
+right tool by category / tag when the tool set is large.
 """
 
 
