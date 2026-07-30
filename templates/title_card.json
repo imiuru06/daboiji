@@ -1,0 +1,53 @@
+{
+  "name": "title_card",
+  "description": "Centered title + subtitle over a radial gradient with a soft vignette. 1920x1080.",
+  "defaults": {
+    "title": "Title",
+    "subtitle": "",
+    "bg1": "#1a2c5e",
+    "bg2": "#0b0e16",
+    "duration": 4
+  },
+  "spec": {
+    "name": "title-card",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "#0b0e16",
+    "tracks": [
+      {
+        "kind": "video",
+        "name": "bg",
+        "clips": [
+          {
+            "element": {"type": "gradient", "stops": [[0, "{{bg1}}"], [1, "{{bg2}}"]], "kind": "radial"},
+            "start": 0,
+            "duration": "{{duration}}"
+          }
+        ]
+      },
+      {
+        "kind": "video",
+        "name": "title",
+        "clips": [
+          {
+            "element": {"type": "text", "text": "{{title}}", "size": 110, "font": "display", "color": "#ffffff", "align": "center", "max_width": 1500},
+            "start": 0.3,
+            "duration": "{{duration}}",
+            "transform": {"position": [960, 470], "anchor": "center"},
+            "transition_in": {"type": "zoom", "duration": 0.6},
+            "transition_out": {"type": "fade", "duration": 0.4}
+          },
+          {
+            "element": {"type": "text", "text": "{{subtitle}}", "size": 46, "font": "sans", "color": "#c9d3e6", "align": "center", "max_width": 1300},
+            "start": 0.7,
+            "duration": "{{duration}}",
+            "transform": {"position": [960, 610], "anchor": "center"},
+            "transition_in": {"type": "fade", "duration": 0.6}
+          }
+        ]
+      }
+    ],
+    "effects": [{"type": "vignette", "amount": 0.35}]
+  }
+}

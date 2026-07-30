@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+
+# Rendered output (reproducible via examples/)
+output/
+
+# Studio / MCP shared project store (runtime data)
+.vf_projects/
+
+# Local verification scratch dirs (scripts/verify_upload.py self-test)
+.vf_store_test/
+.vf_output_test/
+
+# Studio runtime output + publish ledger (scripts/publish_clips.py)
+.vf_output/
+.published.json
+
+# Generated assets (reproducible via examples/generate_assets.py)
+assets/generated/
+
+# Frame handoff scratch (intermediate frames extracted from uploaded clips)
+samples/handoff/
+
+# Working source clips (uploaded generation outputs, joined into final render)
+samples/*.mp4
+
+# OS
+.DS_Store
+
+# Secrets / API keys — NEVER commit (JAMENDO_CLIENT_ID, FREESOUND_API_KEY, ...)
+.env
+.env.*
+!.env.example
+
+# Fetched music (downloaded via fetch_music; re-fetchable from providers)
+assets/audio/*.mp3
+assets/audio/*.wav
+!assets/audio/recovery_bed.*

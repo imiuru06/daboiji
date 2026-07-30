@@ -1,0 +1,63 @@
+{
+  "name": "promo",
+  "description": "Full-frame image/video slot with a bottom scrim, title and subtitle. 1080x1350 (portrait). {{media}} is an image or video path.",
+  "defaults": {
+    "media": "",
+    "title": "Title",
+    "subtitle": "",
+    "media_kind": "image",
+    "duration": 5
+  },
+  "spec": {
+    "name": "promo",
+    "width": 1080,
+    "height": 1350,
+    "fps": 30,
+    "background": "#000000",
+    "tracks": [
+      {
+        "kind": "video",
+        "name": "media",
+        "clips": [
+          {
+            "element": {"type": "{{media_kind}}", "path": "{{media}}", "fit": "cover"},
+            "start": 0,
+            "duration": "{{duration}}"
+          }
+        ]
+      },
+      {
+        "kind": "video",
+        "name": "scrim",
+        "clips": [
+          {
+            "element": {"type": "gradient", "stops": [[0, "#00000000"], [1, "#000000e6"]], "kind": "linear", "angle": 90},
+            "start": 0,
+            "duration": "{{duration}}"
+          }
+        ]
+      },
+      {
+        "kind": "video",
+        "name": "text",
+        "clips": [
+          {
+            "element": {"type": "text", "text": "{{title}}", "size": 74, "font": "sans-bold", "color": "#ffffff", "align": "left", "max_width": 900},
+            "start": 0.2,
+            "duration": "{{duration}}",
+            "transform": {"position": [80, 1160], "anchor": "bottom_left"},
+            "transition_in": {"type": "slide", "duration": 0.5}
+          },
+          {
+            "element": {"type": "text", "text": "{{subtitle}}", "size": 40, "font": "sans", "color": "#d7deec", "align": "left", "max_width": 900},
+            "start": 0.4,
+            "duration": "{{duration}}",
+            "transform": {"position": [80, 1250], "anchor": "bottom_left"},
+            "transition_in": {"type": "fade", "duration": 0.6}
+          }
+        ]
+      }
+    ],
+    "effects": [{"type": "vignette", "amount": 0.25}]
+  }
+}

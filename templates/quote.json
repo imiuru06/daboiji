@@ -1,0 +1,41 @@
+{
+  "name": "quote",
+  "description": "A centered quote with attribution on a solid card. 1080x1080 (square).",
+  "defaults": {
+    "quote": "Quote text",
+    "author": "",
+    "bg": "#0e1320",
+    "accent": "#8fb3ff",
+    "duration": 5
+  },
+  "spec": {
+    "name": "quote",
+    "width": 1080,
+    "height": 1080,
+    "fps": 30,
+    "background": "{{bg}}",
+    "tracks": [
+      {
+        "kind": "video",
+        "name": "quote",
+        "clips": [
+          {
+            "element": {"type": "text", "text": "“{{quote}}”", "size": 62, "font": "serif", "color": "#ffffff", "align": "center", "max_width": 880},
+            "start": 0.3,
+            "duration": "{{duration}}",
+            "transform": {"position": [540, 470], "anchor": "center"},
+            "transition_in": {"type": "fade", "duration": 0.6}
+          },
+          {
+            "element": {"type": "text", "text": "— {{author}}", "size": 38, "font": "sans", "color": "{{accent}}", "align": "center"},
+            "start": 0.8,
+            "duration": "{{duration}}",
+            "transform": {"position": [540, 720], "anchor": "center"},
+            "transition_in": {"type": "fade", "duration": 0.7}
+          }
+        ]
+      }
+    ],
+    "effects": [{"type": "vignette", "amount": 0.3}]
+  }
+}

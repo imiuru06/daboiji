@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>다봐요 · Watch</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+  body{ display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:24px 16px 48px; }
+  .col{ width:100%; max-width:940px; }
+  .app-header{ align-self:stretch; }
+  .stage{ background:#000; border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden;
+    box-shadow:var(--shadow); margin-top:20px; }
+  video{ display:block; width:100%; height:auto; background:#000; aspect-ratio:16/9; }
+  .meta{ margin-top:16px; }
+  .meta h1{ font-size:var(--t-lg); margin:0 0 8px; letter-spacing:-.01em; text-wrap:balance; }
+  .meta .rows{ display:flex; flex-wrap:wrap; gap:6px; }
+  .attr{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); color:var(--fg-muted); font-size:var(--t-sm); }
+  .actions{ margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
+  #cList{ margin:4px 0 14px; }
+  .cmt{ display:flex; gap:10px; padding:9px 0; border-top:1px solid var(--line); align-items:baseline; }
+  .cmt:first-child{ border-top:0; }
+  .cmt .ts{ color:var(--accent); font-family:var(--mono); font-size:var(--t-sm); cursor:pointer; white-space:nowrap; }
+  .cmt .who{ color:var(--fg-faint); font-size:var(--t-xs); }
+  .cmt .body{ flex:1; white-space:pre-wrap; word-break:break-word; font-size:var(--t-sm); }
+  .empty-c{ color:var(--fg-faint); font-size:var(--t-sm); padding:6px 0 10px; }
+  .void{ color:var(--fg-faint); text-align:center; max-width:520px; margin-top:60px; }
+  footer{ margin-top:auto; padding-top:28px; color:var(--fg-faint); font-size:var(--t-xs); }
+</style>
+</head>
+<body>
+  <header class="app-header col"><span class="brand">다봐요</span><span class="tag">Watch</span></header>
+
+  <div id="app" class="stage col" style="display:none">
+    <video id="player" controls playsinline preload="metadata"></video>
+  </div>
+
+  <div id="metaBox" class="meta col panel" style="display:none">
+    <h1 id="title">—</h1>
+    <div class="rows" id="rows"></div>
+    <div class="attr" id="attr" style="display:none"></div>
+    <div class="actions">
+      <a class="btn" id="dl" download>다운로드</a>
+      <a class="btn--ghost btn" id="raw" target="_blank" rel="noopener">원본 열기</a>
+    </div>
+  </div>
+
+  <div id="commentsBox" class="meta col panel" style="display:none">
+    <div class="panel__head"><h2 style="font-size:var(--t-md);margin:0">코멘트</h2><span class="count" id="cCount"></span></div>
+    <div id="cList"></div>
+    <div class="row">
+      <input id="cName" placeholder="이름(선택)" style="max-width:130px">
+      <input class="grow" id="cText" placeholder="이 시점에 코멘트 남기기…">
+      <button class="btn" id="cAdd">현재 시점에 추가</button>
+    </div>
+  </div>
+
+  <div id="empty" class="void" style="display:none">
+    <h2>영상을 찾을 수 없어요</h2>
+    <p class="muted">링크의 자산 ID가 올바른지 확인해 주세요.</p>
+  </div>
+
+  <footer>Shared read-only · dabwayo studio</footer>
+
+<script>
+(function(){
+  var parts = location.pathname.replace(/\/+$/,"").split("/");
+  var last = parts[parts.length-1];
+  var qid = new URLSearchParams(location.search).get("v");
+  var id = (qid || (last && last !== "watch" ? last : "")) || "";
+  var empty = document.getElementById("empty");
+  if(!id){ empty.style.display="block"; return; }
+  var PLAYER = null;
+
+  function fmt(t){ t=Math.max(0,t||0); var m=Math.floor(t/60), s=Math.floor(t%60); return m+":"+(s<10?"0":"")+s; }
+  function renderComments(list){
+    document.getElementById("commentsBox").style.display="block";
+    document.getElementById("cCount").textContent = list.length ? list.length : "";
+    var host=document.getElementById("cList");
+    if(!list.length){ host.innerHTML='<div class="empty-c">아직 코멘트가 없어요. 첫 코멘트를 남겨보세요.</div>'; return; }
+    host.innerHTML="";
+    list.forEach(function(c){
+      var row=document.createElement("div"); row.className="cmt";
+      var ts=document.createElement("span"); ts.className="ts"; ts.textContent="["+fmt(c.t)+"]"; ts.title="이 시점으로 이동";
+      ts.onclick=function(){ if(PLAYER){ try{ PLAYER.currentTime=c.t; PLAYER.play&&PLAYER.play(); }catch(e){} } };
+      var body=document.createElement("span"); body.className="body";
+      var who=document.createElement("span"); who.className="who"; who.textContent=(c.author||"anon")+": ";
+      body.appendChild(who); body.appendChild(document.createTextNode(c.text||""));
+      row.appendChild(ts); row.appendChild(body); host.appendChild(row);
+    });
+  }
+  function loadComments(){
+    fetch("/api/assets/"+encodeURIComponent(id)+"/comments").then(function(r){ return r.ok?r.json():{comments:[]}; })
+      .then(function(j){ renderComments(j.comments||[]); }).catch(function(){ renderComments([]); });
+  }
+  function postComment(){
+    var text=document.getElementById("cText").value.trim(); if(!text) return;
+    var t = PLAYER ? (PLAYER.currentTime||0) : 0, author=document.getElementById("cName").value.trim();
+    fetch("/api/assets/"+encodeURIComponent(id)+"/comments",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({t:t, text:text, author:author})}).then(function(r){ return r.json(); })
+      .then(function(){ document.getElementById("cText").value=""; loadComments(); }).catch(function(){});
+  }
+  document.getElementById("cAdd").addEventListener("click", postComment);
+  document.getElementById("cText").addEventListener("keydown", function(e){ if(e.key==="Enter") postComment(); });
+
+  fetch("/api/assets/" + encodeURIComponent(id))
+    .then(function(r){ if(!r.ok) throw new Error("not found"); return r.json(); })
+    .then(function(a){
+      var base = (a.path || "").split(/[\\/]/).pop(), url = "/files/" + base, kind = a.kind || "video";
+      var player = document.getElementById("player"), stage = document.getElementById("app");
+      if(kind === "audio"){ stage.innerHTML='<audio id="player" controls style="width:100%;display:block"></audio>'; player=document.getElementById("player"); stage.style.background="transparent"; }
+      player.src = url; stage.style.display="block"; PLAYER=player; loadComments();
+      document.getElementById("metaBox").style.display="block";
+      document.getElementById("title").textContent = (a.source && a.source.prompt) ? a.source.prompt.slice(0,120)
+        : (a.role ? a.role[0].toUpperCase()+a.role.slice(1) : "Untitled") + " · " + id;
+      var rows=document.getElementById("rows"); rows.innerHTML="";
+      var bits=[]; if(a.role) bits.push("role: "+a.role); if(a.source&&a.source.provider) bits.push("via "+a.source.provider);
+      var md=a.media||{}; if(md.width&&md.height) bits.push(md.width+"×"+md.height); if(md.duration) bits.push(Math.round(md.duration*10)/10+"s");
+      bits.forEach(function(b){ var s=document.createElement("span"); s.className="chip"; s.textContent=b; rows.appendChild(s); });
+      var attribution = a.source && a.source.params && a.source.params.attribution;
+      if(attribution){ var el=document.getElementById("attr"); el.style.display="block"; el.textContent="♪ "+attribution; }
+      document.getElementById("dl").href=url; document.getElementById("raw").href=url;
+    })
+    .catch(function(){ empty.style.display="block"; });
+})();
+</script>
+</body>
+</html>

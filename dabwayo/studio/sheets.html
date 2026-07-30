@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>다봐요 · Sheets</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+  .wrap{ max-width:1180px; margin:0 auto; padding:20px 18px 90px; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:820px){ .grid{ grid-template-columns:1fr; } }
+  .panel{ margin-bottom:16px; }
+  .stack{ display:flex; flex-direction:column; gap:14px; }
+  .variant{ border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; background:var(--inset); }
+  .variant .vh{ font-weight:600; font-size:var(--t-sm); }
+  .variant .vf{ color:var(--fg-muted); font-size:var(--t-xs); margin-top:2px; }
+  .shot{ border-top:1px solid var(--line); padding:14px 0; }
+  .shot:first-of-type{ border-top:0; }
+  .shot .p{ font-size:var(--t-md); }
+  .shot .meta{ color:var(--fg-muted); font-size:var(--t-sm); margin-top:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .bindrow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+  .bindrow label{ font-size:var(--t-xs); color:var(--fg-faint); }
+  .resolved{ display:none; margin-top:10px; font-family:var(--mono); font-size:var(--t-sm);
+    color:var(--fg-muted); background:var(--inset); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:10px 12px; white-space:pre-wrap; word-break:break-word; }
+  .theme-btn{ background:transparent; border:1px solid var(--line-strong); color:var(--fg);
+    border-radius:var(--radius-pill); width:32px; height:32px; padding:0; cursor:pointer; }
+  .ac{ background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--radius-sm);
+    box-shadow:var(--shadow); overflow:hidden; }
+  .ac-item{ display:flex; align-items:center; gap:8px; padding:8px 10px; font-size:var(--t-sm); cursor:pointer; }
+  .ac-item:hover,.ac-item.on{ background:var(--accent-weak); }
+  .hint{ color:var(--fg-faint); font-size:var(--t-xs); margin-top:6px; }
+  .dropzone{ border:1.5px dashed transparent; border-radius:var(--radius-sm); padding:4px; transition:.12s; }
+  .dropzone.dragover{ border-color:var(--accent); background:var(--accent-weak); }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <span class="brand">다봐요</span><span class="tag">Sheets</span>
+    <span class="spacer"></span>
+    <span class="ctx" id="projHint"></span>
+    <a class="btn--ghost btn btn--sm" href="/board">스토리보드</a>
+    <button class="theme-btn" id="themeBtn" title="테마 전환" aria-label="테마 전환">◐</button>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <section class="panel">
+        <div class="panel__head"><h2>캐릭터</h2><span class="count" id="charN"></span></div>
+        <div class="cards" id="charCards"><span class="empty-state">불러오는 중…</span></div>
+        <div class="row" style="margin-top:14px">
+          <input class="grow" id="charName" placeholder="이름 (예: Mina)">
+          <input class="grow" id="charDesc" placeholder="설명 (예: late-20s, dark bob, calm)">
+          <button class="btn" onclick="createRef('character')">캐릭터 추가</button>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel__head"><h2>환경</h2><span class="count" id="envN"></span></div>
+        <div class="cards" id="envCards"><span class="empty-state">불러오는 중…</span></div>
+        <div class="row" style="margin-top:14px">
+          <input class="grow" id="envName" placeholder="이름 (예: City apartment)">
+          <input class="grow" id="envDesc" placeholder="설명 (예: high-rise, big windows)">
+          <button class="btn" onclick="createRef('environment')">환경 추가</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" id="detail" style="display:none"></section>
+
+    <section class="panel" id="sbPanel" style="display:none">
+      <div class="panel__head"><h2>스토리보드</h2><span class="count" id="sbN"></span></div>
+      <div id="sbList"><span class="empty-state">—</span></div>
+      <div class="row" style="margin-top:14px">
+        <input class="grow" id="shotPrompt" placeholder="샷 액션 — @로 캐릭터·환경 멘션 (예: @Mina looks to the light in @dawn)" autocomplete="off">
+        <input id="shotDur" type="number" min="0.5" step="0.5" value="4" style="width:78px" aria-label="duration">
+        <select id="shotMode"><option>t2v</option><option>i2v</option></select>
+        <button class="btn" onclick="addShot()">샷 추가</button>
+      </div>
+      <div class="hint">@로 캐릭터·환경을 멘션하면 샷 추가 시 자동으로 바인딩됩니다.</div>
+    </section>
+  </div>
+
+<script>
+// theme toggle (prefers-color-scheme by default; toggle overrides + persists)
+(function(){
+  var saved = localStorage.getItem("dabwayo-theme");
+  if(saved) document.documentElement.setAttribute("data-theme", saved);
+  document.getElementById("themeBtn").onclick = function(){
+    var cur = document.documentElement.getAttribute("data-theme");
+    var next = cur === "dark" ? "light" : (cur === "light" ? "dark"
+      : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark"));
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("dabwayo-theme", next);
+  };
+})();
+
+var PROJECT = new URLSearchParams(location.search).get("project") || "";
+var LIB = {character:[], environment:[]};
+function j(url, opts){ return fetch(url, opts).then(function(r){ return r.ok ? r.json() : Promise.reject(r); }); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+function thumb(assetId, label){ return assetId ? '<img src="/api/assets/'+assetId+'/file" alt="">' : '<span>'+esc(label||"no ref")+'</span>'; }
+
+function renderRefs(kind){
+  var cardsId = kind==="character"?"charCards":"envCards", nId = kind==="character"?"charN":"envN";
+  return j("/api/references/"+kind).then(function(d){
+    LIB[kind] = d.references || []; rebuildMentions();
+    document.getElementById(nId).textContent = d.count ? d.count : "";
+    var host = document.getElementById(cardsId); host.innerHTML="";
+    if(!d.count){ host.innerHTML='<span class="empty-state">아직 없어요 — 아래에서 추가하세요.</span>'; return; }
+    d.references.forEach(function(r){
+      var c = document.createElement("div"); c.className="card"; c.tabIndex=0; c.dataset.id=r.id;
+      c.innerHTML = '<div class="thumb">'+thumb(r.thumb, r.name)+'</div>'+
+        '<div class="cap"><div class="nm"></div><div class="sub">변형 '+r.variants+' · 레퍼런스 '+r.base_refs+'</div></div>';
+      c.querySelector(".nm").textContent = r.name || r.id;
+      c.onclick = function(){ openDetail(kind, r.id); };
+      c.onkeydown = function(e){ if(e.key==="Enter") openDetail(kind, r.id); };
+      host.appendChild(c);
+    });
+  }).catch(function(){ document.getElementById(cardsId).innerHTML='<span class="empty-state">불러오기 실패</span>'; });
+}
+function createRef(kind){
+  var name=document.getElementById(kind==="character"?"charName":"envName").value.trim();
+  var desc=document.getElementById(kind==="character"?"charDesc":"envDesc").value.trim();
+  if(!name) return;
+  j("/api/references/"+kind,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,description:desc})})
+    .then(function(){ document.getElementById(kind==="character"?"charName":"envName").value="";
+      document.getElementById(kind==="character"?"charDesc":"envDesc").value=""; renderRefs(kind).then(function(){ if(PROJECT) renderStoryboard(); }); });
+}
+
+function openDetail(kind, id){
+  document.querySelectorAll(".card").forEach(function(c){ c.classList.toggle("sel", c.dataset.id===id); });
+  j("/api/references/"+kind+"/"+id).then(function(res){
+    var r = res.reference, d = document.getElementById("detail"); d.style.display="block";
+    var isChar = kind==="character";
+    var baseimgs = (r.base_refs||[]).map(function(a){return '<img src="/api/assets/'+a+'/file" alt="">';}).join("") || '<span class="empty">비어있음</span>';
+    var variants = (r.variants||[]).map(function(v){
+      var attrs = ["kind","time_of_day","lighting","mood","focus"].filter(function(k){return v[k];})
+        .map(function(k){return '<span class="chip">'+esc(k)+': '+esc(v[k])+'</span>';}).join(" ");
+      var refimgs = (v.refs||[]).map(function(a){return '<img src="/api/assets/'+a+'/file" alt="">';}).join("") || '<span class="empty"></span>';
+      return '<div class="variant"><div class="vh"></div><div class="vf"></div>'+
+             (attrs?'<div class="row" style="margin-top:6px">'+attrs+'</div>':'')+
+             '<div class="refs">'+refimgs+'</div></div>';
+    });
+    d.innerHTML =
+      '<div class="panel__head"><h2></h2><span class="count mono">'+kind+' · '+r.id+'</span></div>'+
+      '<p class="muted" style="margin:0 0 14px"></p>'+
+      '<div class="section-label">base refs <span class="faint">— 이미지를 끌어다 놓아 추가</span></div>'+
+      '<div class="refs dropzone" id="dz">'+baseimgs+'</div>'+
+      '<div class="row" style="margin:14px 0 4px">'+
+        '<button class="btn" id="genBtn" onclick="genSheet(\''+kind+'\',\''+r.id+'\')">'+
+          (isChar?'캐릭터 시트 생성 (front · profile)':'환경 시트 생성 (wide · detail)')+'</button>'+
+        '<input class="grow" id="attachAid" placeholder="레퍼런스 에셋 id (ast_…)">'+
+        '<button class="btn--ghost btn" onclick="attachRef(\''+kind+'\',\''+r.id+'\')">첨부</button>'+
+      '</div>'+
+      '<div class="section-label" style="margin-top:16px">variants</div><div class="stack" id="vwrap" style="margin:8px 0"></div>'+
+      '<div class="row">'+
+        '<input class="grow" id="vLabel" placeholder="변형 라벨 (예: grey knit / dawn)">'+
+        '<input class="grow" id="vFrag" placeholder="prompt fragment (예: in a grey knit sweater)">'+
+        '<input class="grow" id="vAttr" placeholder="attrs json (예: {&quot;time_of_day&quot;:&quot;dawn&quot;})">'+
+        '<button class="btn" onclick="addVariant(\''+kind+'\',\''+r.id+'\')">변형 추가</button>'+
+      '</div>';
+    d.querySelector("h2").textContent = r.name || r.id;
+    d.querySelector("p.muted").textContent = r.description || "";
+    var vwrap = d.querySelector("#vwrap");
+    if(!(r.variants||[]).length){ vwrap.innerHTML='<span class="empty-state">변형이 아직 없어요.</span>'; }
+    else (r.variants||[]).forEach(function(v,i){
+      var el=document.createElement("div"); el.innerHTML=variants[i]; el=el.firstChild;
+      el.querySelector(".vh").textContent=v.label||"";
+      el.querySelector(".vf").textContent=v.prompt_fragment||"";
+      vwrap.appendChild(el);
+    });
+    var dz=d.querySelector("#dz");
+    if(dz){
+      dz.ondragover=function(e){ e.preventDefault(); dz.classList.add("dragover"); };
+      dz.ondragleave=function(){ dz.classList.remove("dragover"); };
+      dz.ondrop=function(e){ e.preventDefault(); dz.classList.remove("dragover");
+        var files=[].slice.call(e.dataTransfer.files).filter(function(f){ return /^image\//.test(f.type); });
+        if(files.length) dropFiles(kind, r.id, files);
+      };
+    }
+    d.scrollIntoView({behavior:"smooth", block:"nearest"});
+  });
+}
+function fileToB64(file){ return new Promise(function(res,rej){ var r=new FileReader();
+  r.onload=function(){ res(String(r.result).split(",")[1]); }; r.onerror=rej; r.readAsDataURL(file); }); }
+function dropFiles(kind, id, files){
+  var chain=Promise.resolve();
+  files.forEach(function(f){ chain=chain.then(function(){ return fileToB64(f).then(function(b64){
+    return j("/api/upload",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({b64:b64, filename:f.name, kind:"image", role:"reference"})})
+      .then(function(up){ var aid=(up.asset||{}).id; if(!aid) return;
+        return j("/api/references/"+kind+"/"+id+"/attach",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({asset_id:aid})}); });
+  }); }); });
+  chain.then(function(){ openDetail(kind,id); renderRefs(kind); })
+       .catch(function(){ alert("업로드/첨부 실패"); });
+}
+function addVariant(kind,id){
+  var label=document.getElementById("vLabel").value.trim(); if(!label) return;
+  var frag=document.getElementById("vFrag").value.trim(), raw=document.getElementById("vAttr").value.trim(), attrs=null;
+  if(raw){ try{ attrs=JSON.parse(raw); }catch(e){ alert("attrs json 형식이 올바르지 않아요."); return; } }
+  j("/api/references/"+kind+"/"+id+"/variant",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({label:label,prompt_fragment:frag,attributes:attrs})})
+    .then(function(){ openDetail(kind,id); renderRefs(kind); });
+}
+function attachRef(kind,id){
+  var aid=document.getElementById("attachAid").value.trim(); if(!aid) return;
+  j("/api/references/"+kind+"/"+id+"/attach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset_id:aid})})
+    .then(function(){ openDetail(kind,id); renderRefs(kind); }).catch(function(){ alert("첨부 실패 — 에셋 id를 확인하세요."); });
+}
+function genSheet(kind,id){
+  var b=document.getElementById("genBtn"); b.disabled=true; b.textContent="생성 중…";
+  var views = kind==="character" ? ["front view","left profile view"] : ["wide establishing shot","atmospheric detail shot"];
+  j("/api/references/"+kind+"/"+id+"/sheet",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({views:views})})
+    .then(function(){ openDetail(kind,id); renderRefs(kind); })
+    .catch(function(){ b.disabled=false; b.textContent="시트 생성 (실패 — provider 확인)"; });
+}
+
+function optionList(kind){
+  return '<option value="">('+kind+' 없음)</option>'+LIB[kind].map(function(r){return '<option value="'+r.id+'">'+esc(r.name||r.id)+'</option>';}).join("");
+}
+function renderStoryboard(){
+  if(!PROJECT) return;
+  document.getElementById("sbPanel").style.display="block";
+  document.getElementById("projHint").textContent="project "+PROJECT;
+  j("/api/projects/"+PROJECT+"/storyboard").then(function(d){
+    document.getElementById("sbN").textContent = d.count ? d.count+" shots" : "";
+    var host=document.getElementById("sbList");
+    if(!d.count){ host.innerHTML='<span class="empty-state">샷이 없어요 — 아래에서 추가하세요.</span>'; return; }
+    host.innerHTML="";
+    d.shots.forEach(function(s){
+      var el=document.createElement("div"); el.className="shot";
+      el.innerHTML='<div class="p"></div>'+
+        '<div class="meta"><span class="chip">'+s.mode+'</span><span class="chip">'+s.duration+'s</span>'+
+        (s.has_media?'<span class="pill pill--good">media</span>':'')+
+        '<a href="#" class="rz">resolve</a></div>'+
+        '<div class="bindrow"><label>캐릭터</label><select class="selC">'+optionList("character")+'</select>'+
+        '<label>환경</label><select class="selE">'+optionList("environment")+'</select>'+
+        '<button class="btn--sm btn bindb">bind</button><span class="bound"></span></div>'+
+        '<div class="resolved"></div>';
+      el.querySelector(".p").textContent=(s.prompt||"(no prompt)")+(s.caption?"  — caption: "+s.caption:"");
+      var rz=el.querySelector(".resolved");
+      el.querySelector(".rz").onclick=function(e){ e.preventDefault();
+        if(rz.style.display==="block"){ rz.style.display="none"; return; }
+        j("/api/projects/"+PROJECT+"/storyboard/"+s.id+"/resolve").then(function(r){
+          rz.style.display="block";
+          rz.textContent="prompt: "+(r.prompt||"")+"\nreference_images: "+JSON.stringify(r.reference_images)+"\nmode: "+r.mode;
+        });
+      };
+      el.querySelector(".bindb").onclick=function(){
+        var cid=el.querySelector(".selC").value, eid=el.querySelector(".selE").value;
+        j("/api/projects/"+PROJECT+"/storyboard/"+s.id+"/bind",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({character_id:cid||null, environment_id:eid||null})})
+          .then(function(){ el.querySelector(".bound").innerHTML='<span class="pill pill--good">바인딩됨</span>'; });
+      };
+      host.appendChild(el);
+    });
+  });
+}
+// ---- @mention autocomplete for shot binding ----
+var MENTIONS = {};   // lowercased name -> {kind, id, name}  (first match; may be ambiguous)
+var PICKED = {};     // lowercased name -> {kind, id}  (exact choice from autocomplete)
+function rebuildMentions(){ MENTIONS={}; ["character","environment"].forEach(function(k){
+  (LIB[k]||[]).forEach(function(r){ var key=(r.name||r.id).toLowerCase();
+    if(!MENTIONS[key]) MENTIONS[key]={kind:k,id:r.id,name:r.name||r.id}; }); }); }
+var acEl=null;
+function closeAC(){ if(acEl){ acEl.remove(); acEl=null; } }
+function shotInput(e){
+  var inp=e.target, pos=inp.selectionStart, m=/@([\w가-힣]*)$/.exec(inp.value.slice(0,pos));
+  if(!m){ closeAC(); return; }
+  var q=m[1].toLowerCase();
+  var matches=Object.keys(MENTIONS).map(function(k){return MENTIONS[k];})
+    .filter(function(x){ return x.name.toLowerCase().indexOf(q)>=0; }).slice(0,6);
+  if(!matches.length){ closeAC(); return; }
+  closeAC();
+  var r=inp.getBoundingClientRect();
+  acEl=document.createElement("div"); acEl.className="ac";
+  acEl.style.cssText="position:fixed;left:"+r.left+"px;top:"+(r.bottom+4)+"px;width:"+Math.min(r.width,340)+"px;";
+  matches.forEach(function(x){
+    var it=document.createElement("div"); it.className="ac-item";
+    it.innerHTML='<span class="chip">'+(x.kind==="character"?"캐릭터":"환경")+'</span><b></b>';
+    it.querySelector("b").textContent=x.name;
+    it.onmousedown=function(ev){ ev.preventDefault();
+      PICKED[x.name.toLowerCase()]={kind:x.kind,id:x.id};   // exact choice wins over ambiguous name
+      var val=inp.value; inp.value=val.slice(0,m.index)+"@"+x.name+" "+val.slice(pos); inp.focus(); closeAC(); };
+    acEl.appendChild(it);
+  });
+  document.body.appendChild(acEl);
+}
+function addShot(){
+  var raw=document.getElementById("shotPrompt").value.trim(); if(!raw) return;
+  var binds={character:null, environment:null};
+  var cleaned=raw.replace(/@([\w가-힣]+)/g, function(_, nm){
+    var x=PICKED[nm.toLowerCase()] || MENTIONS[nm.toLowerCase()];
+    if(x){ binds[x.kind]=x.id; return ""; } return "@"+nm;
+  }).replace(/\s{2,}/g," ").trim();
+  var dur=parseFloat(document.getElementById("shotDur").value)||4, mode=document.getElementById("shotMode").value;
+  j("/api/projects/"+PROJECT+"/storyboard",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({prompt:cleaned||raw,duration:dur,mode:mode})})
+    .then(function(res){
+      document.getElementById("shotPrompt").value=""; closeAC();
+      if((binds.character||binds.environment) && res.shot_id){
+        return j("/api/projects/"+PROJECT+"/storyboard/"+res.shot_id+"/bind",
+          {method:"POST",headers:{"Content-Type":"application/json"},
+           body:JSON.stringify({character_id:binds.character, environment_id:binds.environment})});
+      }
+    }).then(renderStoryboard);
+}
+
+(function(){
+  var sp=document.getElementById("shotPrompt");
+  sp.addEventListener("input", shotInput);
+  sp.addEventListener("blur", function(){ setTimeout(closeAC, 120); });
+})();
+Promise.all([renderRefs("character"), renderRefs("environment")]).then(function(){ rebuildMentions(); renderStoryboard(); });
+</script>
+</body>
+</html>

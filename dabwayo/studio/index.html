@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>다봐요 Studio</title>
+<link rel="stylesheet" href="/studio.css">
+</head>
+<body>
+<header>
+  <span class="brand"><span class="dot"></span>다봐요 <b>Studio</b></span>
+  <div class="hgroup proj">
+    <select id="proj" style="flex:1"></select>
+    <button class="btn icon sm ghost" onclick="renameProject()" title="이름 변경">✎</button>
+    <button class="btn icon sm ghost" onclick="duplicateProject()" title="복제">⧉</button>
+    <button class="btn icon sm ghost" onclick="deleteProject()" title="삭제">🗑</button>
+    <button class="btn icon sm ghost" onclick="refreshProjects()" title="새로고침">↻</button>
+    <button class="btn sm" onclick="createProject()">+ 새 프로젝트</button>
+  </div>
+  <span class="sp"></span>
+  <span class="store" id="store"></span>
+  <label class="live">동기화<span class="switch"><input type="checkbox" id="live" checked><span class="slider"></span></span></label>
+  <button class="btn sm ghost" onclick="openSheets()" title="캐릭터·환경·스토리보드 시트">🎬 시트</button>
+  <button class="btn brand" id="renderBtn" onclick="doRender()">▶ 렌더</button>
+</header>
+
+<div class="app" data-mview="tools">
+  <!-- ===== LEFT: tools ===== -->
+  <div class="panel tools">
+    <div class="tabbar">
+      <button class="tabbtn on" data-group="tools" data-name="media" onclick="showTab('tools','media')">미디어</button>
+      <button class="tabbtn" data-group="tools" data-name="text" onclick="showTab('tools','text')">텍스트</button>
+      <button class="tabbtn" data-group="tools" data-name="graphic" onclick="showTab('tools','graphic')">그래픽</button>
+      <button class="tabbtn" data-group="tools" data-name="fx" onclick="showTab('tools','fx')">효과</button>
+    </div>
+    <div class="tabbody">
+      <!-- 미디어 -->
+      <div class="tabpane on" data-group="tools" data-name="media">
+        <div class="sec-title">영상 / 이미지 에셋</div>
+        <div class="card">
+          <label>등록된 에셋</label>
+          <select id="mediaSel"></select>
+          <div class="row" style="margin-top:8px">
+            <div><label>시작(s)</label><input id="medStart" type="number" step="0.1" value="0"></div>
+            <div><label>길이(s)</label><input id="medDur" type="number" step="0.1" value="5"></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn icon ghost" onclick="loadAssets()" title="에셋 새로고침">↻</button>
+            <button class="btn primary" style="flex:2" onclick="addMedia()">＋ 타임라인에 추가</button>
+          </div>
+        </div>
+        <p class="hint">발행/업로드된 영상이 여기 드롭다운에 나타납니다. 골라서 타임라인에 올린 뒤, 텍스트·효과를 얹어 다시 렌더하세요.</p>
+      </div>
+      <!-- 텍스트 -->
+      <div class="tabpane" data-group="tools" data-name="text">
+        <div class="sec-title">자막 / 제목</div>
+        <div class="card">
+          <h3>텍스트</h3>
+          <label>내용</label>
+          <input id="txt" value="제품 소개">
+          <div class="row" style="margin-top:6px">
+            <div><label>크기</label><input id="txtSize" type="number" value="90"></div>
+            <div><label>색</label><input id="txtColor" value="#ffffff"></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="addText()">＋ 텍스트 추가</button>
+        </div>
+        <div class="card">
+          <h3>말풍선 콜아웃</h3>
+          <label>내용</label>
+          <input id="coTxt" value="이 부분을 설명">
+          <div class="row" style="margin-top:6px">
+            <div><label>X</label><input id="coX" type="number" value="640"></div>
+            <div><label>Y</label><input id="coY" type="number" value="360"></div>
+            <div><label>꼬리</label><select id="coSide"><option>bottom</option><option>top</option><option>left</option><option>right</option></select></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="addCallout()">＋ 콜아웃 추가</button>
+        </div>
+      </div>
+      <!-- 그래픽 -->
+      <div class="tabpane" data-group="tools" data-name="graphic">
+        <div class="sec-title">배경 / 그래픽</div>
+        <div class="card">
+          <h3>배경 그라데이션</h3>
+          <div class="row">
+            <div><label>시작색</label><input id="bg1" value="#1a2c5e"></div>
+            <div><label>끝색</label><input id="bg2" value="#0b0e16"></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="addBackground()">＋ 배경 추가</button>
+        </div>
+      </div>
+      <!-- 효과 -->
+      <div class="tabpane" data-group="tools" data-name="fx">
+        <div class="sec-title">마스터 이펙트</div>
+        <div class="card">
+          <label>이펙트</label>
+          <select id="fx"></select>
+          <button class="btn block" style="margin-top:10px" onclick="addEffect()">＋ 이펙트 추가</button>
+        </div>
+        <p class="hint">선택한 이펙트가 전체 영상(마스터)에 적용됩니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CENTER: stage ===== -->
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <div class="empty"><div class="big">프로젝트를 선택하거나 만들어 주세요</div>왼쪽 도구로 배경·텍스트·미디어를 추가하고, 아래에서 미리보기·렌더하세요.</div>
+    </div>
+    <div class="transport">
+      <button class="btn icon" id="playBtn" onclick="playToggle()" title="재생/일시정지">▶</button>
+      <span class="t" id="tlabel">0.0s</span>
+      <input id="time" type="range" min="0" max="10" step="0.1" value="0" oninput="onScrub()">
+      <button class="btn sm ghost" onclick="refreshPreview()" title="현재 프레임 새로고침">미리보기</button>
+      <button class="btn sm ghost" onclick="undoEdit()" title="마지막 편집 되돌리기">↶ 되돌리기</button>
+    </div>
+    <div class="rinfo" id="renderInfo"></div>
+  </div>
+
+  <!-- ===== RIGHT: inspector ===== -->
+  <div class="panel inspector">
+    <div class="tabbar">
+      <button class="tabbtn on" data-group="insp" data-name="props" onclick="showTab('insp','props')">속성</button>
+      <button class="tabbtn" data-group="insp" data-name="ai" onclick="showTab('insp','ai')">AI 채팅</button>
+      <button class="tabbtn" data-group="insp" data-name="code" onclick="showTab('insp','code')">코드</button>
+    </div>
+    <div class="tabbody">
+      <!-- 속성 -->
+      <div class="tabpane on" data-group="insp" data-name="props">
+        <div id="inspectorBody"><div class="empty-i">타임라인에서 클립을 선택하면<br>여기서 편집할 수 있습니다.</div></div>
+      </div>
+      <!-- AI -->
+      <div class="tabpane" data-group="insp" data-name="ai" style="height:100%">
+        <div class="chat">
+          <div style="margin-bottom:8px"><span class="pill" id="chatStatus"></span></div>
+          <div class="chatlog" id="chatLog"></div>
+          <div class="chatin">
+            <input id="chatIn" placeholder="예: 빨간 제목 '신제품'을 가운데 추가해줘" onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="btn primary" id="chatBtn" onclick="sendChat()">전송</button>
+          </div>
+        </div>
+      </div>
+      <!-- 코드 -->
+      <div class="tabpane" data-group="insp" data-name="code">
+        <div class="sec-title">원본 스펙 (JSON)</div>
+        <textarea id="rawspec" style="min-height:320px"></textarea>
+        <button class="btn block" style="margin-top:8px" onclick="saveSpec()">스펙 저장 (PUT)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM: timeline ===== -->
+  <div class="timeline">
+    <div class="tl-head">타임라인 <span class="dur" id="durlabel"></span>
+      <span style="flex:1"></span>
+      <button class="btn sm ghost" onclick="addTrack('video')" title="비디오 트랙 추가">＋ 비디오</button>
+      <button class="btn sm ghost" onclick="addTrack('audio')" title="오디오 트랙 추가">＋ 오디오</button>
+    </div>
+    <div class="tl-body" id="tlBody">
+      <div id="timelineTracks"></div>
+      <div class="tl-playhead" id="playhead"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="ctxmenu" id="ctxmenu"></div>
+<nav class="mobilenav" id="mnav">
+  <button data-mv="tools" class="on" onclick="setMView('tools')"><span class="ic">＋</span>도구</button>
+  <button data-mv="timeline" onclick="setMView('timeline')"><span class="ic">▭</span>타임라인</button>
+  <button data-mv="inspect" onclick="setMView('inspect')"><span class="ic">⚙</span>속성</button>
+</nav>
+
+<!-- Sheets / storyboard, integrated as a project-aware overlay (same store) -->
+<div id="sheetsOverlay" class="sheets-overlay">
+  <div class="so-head"><b>시트 · 스토리보드</b>
+    <span id="sheetsCtx" class="store"></span><span style="flex:1"></span>
+    <button class="btn sm ghost" onclick="openSheets()" title="새로고침">↻</button>
+    <button class="btn sm" onclick="closeSheets()">✕ 닫기</button>
+  </div>
+  <iframe id="sheetsFrame" title="시트"></iframe>
+</div>
+
+<script src="/studio.js"></script>
+<script>
+  function openSheets(){
+    var pid=(document.getElementById('proj')||{}).value||'';
+    document.getElementById('sheetsFrame').src='/sheets'+(pid?('?project='+pid):'');
+    document.getElementById('sheetsCtx').textContent = pid ? ('project '+pid) : '(프로젝트 미선택)';
+    document.getElementById('sheetsOverlay').classList.add('open');
+  }
+  function closeSheets(){ document.getElementById('sheetsOverlay').classList.remove('open'); }
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeSheets(); });
+</script>
+</body>
+</html>

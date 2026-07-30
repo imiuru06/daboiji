@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "dabwayo": {
+      "command": "python",
+      "args": ["-m", "dabwayo.mcp_server"],
+      "env": {
+        "PYTHONPATH": ".",
+        "DABWAYO_STORE": ".vf_projects",
+        "DABWAYO_OUTPUT": "output"
+      }
+    }
+  }
+}

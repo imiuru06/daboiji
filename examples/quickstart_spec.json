@@ -1,0 +1,58 @@
+{
+  "name": "quickstart",
+  "width": 1280,
+  "height": 720,
+  "fps": 30,
+  "background": "#0b0e16",
+  "tracks": [
+    {
+      "kind": "video",
+      "name": "bg",
+      "clips": [
+        {
+          "element": {
+            "type": "gradient",
+            "stops": [[0, "#1a2c5e"], [1, "#0b0e16"]],
+            "kind": "radial",
+            "center": [0.5, 0.45]
+          },
+          "start": 0,
+          "duration": 4
+        }
+      ]
+    },
+    {
+      "kind": "video",
+      "name": "title",
+      "clips": [
+        {
+          "element": {
+            "type": "text",
+            "text": "Hello, agents.",
+            "size": 110,
+            "font": "display",
+            "color": "#eaf2ff"
+          },
+          "start": 0.3,
+          "duration": 3.4,
+          "transform": {
+            "scale": {
+              "default": 1.1,
+              "keyframes": [
+                {"time": 0.3, "value": 1.1},
+                {"time": 1.1, "value": 1.0, "easing": "ease_out_cubic"}
+              ]
+            }
+          },
+          "effects": [{"type": "glow", "intensity": 0.4, "radius": 16}],
+          "transition_in": {"type": "fade", "duration": 0.5},
+          "transition_out": {"type": "fade", "duration": 0.5}
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {"type": "color_grade", "contrast": 1.05, "saturation": 1.1},
+    {"type": "vignette", "amount": 0.4}
+  ]
+}

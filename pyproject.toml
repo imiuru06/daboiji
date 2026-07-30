@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dabwayo"
+version = "0.1.0"
+description = "다봐요 (Dabwayo) — a modular, scriptable video rendering engine with an MCP interface for agents."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Dabwayo" }]
+dependencies = [
+    "numpy>=1.24",
+    "Pillow>=10.0",
+    "imageio>=2.30",
+    "imageio-ffmpeg>=0.4.9",
+    "opencv-python-headless>=4.8",
+    "mcp>=1.2.0",
+    "requests>=2.28",
+]
+
+[project.optional-dependencies]
+# ML inpainting backend for `lama_inpaint` (deep large-mask inpainting).
+ml = [
+    "torch>=2.0",
+    "simple-lama-inpainting>=0.1.2",
+]
+# Natural-language editing in the Studio chat panel (provider-agnostic tool use).
+ai = [
+    "anthropic>=0.40",      # Claude backend
+]
+ai-openai = [
+    "openai>=1.40",         # any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama, opencode, …)
+]
+
+[project.scripts]
+dabwayo-mcp = "dabwayo.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["dabwayo*"]
+
+[tool.setuptools.package-data]
+dabwayo = ["../assets/fonts/*.ttf"]

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>다봐요 Dashboard</title>
+<style>
+  :root{--bg:#0a0d14;--panel:#121726;--panel2:#0e1320;--line:#222a3d;--ink:#e8eefc;
+        --mut:#8aa0c8;--acc:#5cc8ff;--acc2:#ea1834;--ok:#54e0b0;--warn:#ffcf6b;}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;
+       background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);
+         background:linear-gradient(180deg,#121726,#0c1018);position:sticky;top:0;z-index:5}
+  header h1{font-size:16px;margin:0;letter-spacing:.5px}
+  header .dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok)}
+  header .sp{margin-left:auto;color:var(--mut);font-size:12px}
+  header a{color:var(--acc);text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);
+     margin:26px 0 12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card .meta{font-size:11px;color:var(--mut)}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;
+       background:#15203a;color:var(--acc);border:1px solid var(--line);margin:2px 4px 2px 0}
+  .tag.gpu{color:var(--warn)} .tag.low{color:var(--ok)}
+  code{font-family:ui-monospace,monospace;font-size:12px;background:var(--panel2);
+       border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:#cfe6ff}
+  /* timeline */
+  .tl{position:relative;margin-left:10px;padding-left:22px;border-left:2px solid var(--line)}
+  .ev{position:relative;margin:0 0 14px}
+  .ev::before{content:"";position:absolute;left:-29px;top:3px;width:12px;height:12px;border-radius:50%;
+              background:var(--acc);box-shadow:0 0 0 3px var(--bg)}
+  .ev .t{font-size:11px;color:var(--mut)}
+  .ev .act{font-weight:600;margin:1px 0 4px}
+  .ev .io{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px}
+  .ev .io .b{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+  .ev .arrow{color:var(--acc)}
+  .sample{color:var(--warn);font-size:12px;margin:4px 0 10px}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:10px}
+  details summary{cursor:pointer;font-weight:600}
+  ul{margin:8px 0;padding-left:18px} li{margin:3px 0}
+  .ex{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+      padding:8px 10px;margin:6px 0;color:#bfe0ff;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap}
+  .muted{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot"></span><h1>다봐요 — 운영 대시보드</h1>
+  <span class="sp">Claude Code가 채우는 상태판 · <a href="/">Studio 편집기 →</a> · <span id="ts"></span></span>
+</header>
+<div class="wrap">
+
+  <h2>① MCP가 할 수 있는 동작</h2>
+  <div class="grid" id="actions"></div>
+
+  <h2>② 작업 타임라인 (전 → 후)</h2>
+  <div id="sampleNote"></div>
+  <div class="tl" id="timeline"></div>
+
+  <h2>③ 프롬프트 가이드 — 여러 미디어를 연결하는 클립</h2>
+  <div id="prompts"></div>
+
+  <h2>④ 에셋 & 계보 <span class="muted">(미디어 + 출처 그래프)</span></h2>
+  <div id="assets"></div>
+
+  <h2>⑤ 엔진 프리미티브 <span class="muted">(요소·효과·전환)</span></h2>
+  <div class="card" id="caps"></div>
+
+</div>
+<script>
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+async function load(){
+  const d = await (await fetch('/api/dashboard')).json();
+  document.getElementById('ts').textContent = new Date().toLocaleTimeString();
+
+  // 1. actions
+  document.getElementById('actions').innerHTML = d.actions.map(a=>`
+    <div class="card">
+      <h3>${esc(a.action)}</h3>
+      <div>${esc(a.summary)}</div>
+      <div style="margin-top:8px">${a.tools.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+      <div class="meta" style="margin-top:6px">compute:
+        <span class="tag ${/GPU/.test(a.compute)?'gpu':'low'}">${esc(a.compute)}</span></div>
+    </div>`).join('');
+
+  // 2. timeline
+  document.getElementById('sampleNote').innerHTML = d.activity_is_sample
+    ? `<div class="sample">⚠ 실제 기록이 비어 있어 <b>예시</b>를 표시합니다. Claude Code가 <code>log_activity</code>로 기록하면 여기에 실제 작업이 쌓입니다.</div>` : '';
+  document.getElementById('timeline').innerHTML = d.activity.map(e=>`
+    <div class="ev">
+      <div class="t">${esc(e.time||'')} ${e.sample?'· (예시)':''}</div>
+      <div class="act">${esc(e.action||'')} — ${esc(e.summary||'')}</div>
+      <div class="io">
+        <span class="b">${(e.inputs||[]).map(esc).join('<br>')||'—'}</span>
+        <span class="arrow">▶</span>
+        <span class="b">${(e.outputs||[]).map(esc).join('<br>')||'—'}</span>
+      </div>
+      ${e.notes?`<div class="meta" style="margin-top:4px">${esc(e.notes)}</div>`:''}
+    </div>`).reverse().join('');
+
+  // 3. prompts
+  document.getElementById('prompts').innerHTML = d.prompts.map(p=>`
+    <details ${/★/.test(p.title)?'open':''}>
+      <summary>${esc(p.title)}</summary>
+      ${p.why?`<div class="muted" style="margin:6px 0">${esc(p.why)}</div>`:''}
+      ${p.formula?`<div class="muted">형식</div><span class="ex">${esc(p.formula)}</span>`:''}
+      ${p.rules?`<div class="muted">규칙</div><ul>${p.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`:''}
+      ${p.example?`<div class="muted">예시</div><span class="ex">${esc(p.example)}</span>`:''}
+      ${p.example_set?`<div class="muted">예시 세트</div>${p.example_set.map(x=>`<span class="ex">${esc(x)}</span>`).join('')}`:''}
+      ${p.tips?`<ul>${p.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}
+    </details>`).join('');
+
+  // 4. assets & lineage (from the store manifest)
+  try{
+    const idx = await (await fetch('/api/index')).json();
+    const byId = Object.fromEntries(idx.assets.map(a=>[a.id,a]));
+    const chain = a => { const out=[]; let x=a; const seen=new Set();
+      while(x && !seen.has(x.id)){ seen.add(x.id); out.unshift(x.id); x=byId[x.parent]; } return out; };
+    document.getElementById('assets').innerHTML =
+      `<div class="muted" style="margin-bottom:8px">프로젝트 ${idx.counts.projects} · 에셋 ${idx.counts.assets}</div>` +
+      (idx.assets.length ? idx.assets.map(a=>`
+        <div class="card" style="margin-bottom:8px">
+          <h3>${esc(a.id)} <span class="tag">${esc(a.role)}</span>
+              <span class="tag low">${esc(a.kind)}</span></h3>
+          <div class="meta">provider: ${esc(a.provider||'—')} · ${a.duration?esc(a.duration)+'s':''}
+               · ${esc(a.created||'')}</div>
+          <div style="margin-top:6px">계보: <code>${chain(a).join(' ▶ ')}</code></div>
+          ${a.projects&&a.projects.length?`<div class="meta">사용: ${a.projects.map(esc).join(', ')}</div>`:''}
+        </div>`).join('')
+      : `<div class="muted">아직 등록된 에셋이 없습니다. generate_video / remove_watermark 가 자동 등록합니다.</div>`);
+  }catch(e){ document.getElementById('assets').innerHTML = '<div class="muted">index 불러오기 실패</div>'; }
+
+  // 5. capabilities
+  const c = d.capabilities;
+  const row = (k,v)=>`<div style="margin:4px 0"><span class="muted">${k}:</span> ${(v||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div>`;
+  document.getElementById('caps').innerHTML =
+    row('elements', c.elements) + row('effects', c.effects) +
+    row('transitions', c.transitions) + row('easings', (c.easings||[]).slice(0,8));
+}
+load(); setInterval(load, 5000);   // activity 자동 갱신
+</script>
+</body>
+</html>

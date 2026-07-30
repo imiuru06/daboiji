@@ -1,0 +1,7 @@
+numpy>=1.24
+Pillow>=10.0
+imageio>=2.30
+imageio-ffmpeg>=0.4.9
+opencv-python-headless>=4.8
+mcp>=1.2.0
+requests>=2.28

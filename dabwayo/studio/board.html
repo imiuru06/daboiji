@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>다봐요 · Storyboards</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+  .wrap{ max-width:1240px; margin:0 auto; padding:20px 18px 90px; display:grid; grid-template-columns:280px 1fr; gap:16px; }
+  @media (max-width:900px){ .wrap{ grid-template-columns:1fr; } }
+  .panel{ margin-bottom:16px; }
+  .sb{ border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; cursor:pointer; margin-bottom:8px; background:var(--surface); }
+  .sb:hover{ border-color:var(--line-strong); } .sb.sel{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+  .sb .nm{ font-weight:600; font-size:var(--t-sm); } .sb .sub{ color:var(--fg-faint); font-size:var(--t-xs); font-variant-numeric:tabular-nums; }
+  .scene{ border:1px solid var(--line); border-radius:var(--radius); margin-bottom:14px; overflow:hidden; }
+  .scene__head{ display:flex; align-items:center; gap:8px; padding:9px 12px; background:var(--surface-2); border-bottom:1px solid var(--line); }
+  .scene__head .nm{ font-weight:650; font-size:var(--t-sm); }
+  .shots{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; padding:12px; }
+  .shot{ border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px; background:var(--inset); }
+  .shot .p{ font-size:var(--t-sm); } .shot .binds{ margin-top:6px; display:flex; flex-wrap:wrap; gap:5px; }
+  .shot .rz{ font-size:var(--t-xs); } .shot .resolved{ display:none; margin-top:7px; font-family:var(--mono); font-size:var(--t-xs); color:var(--fg-muted); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:7px; white-space:pre-wrap; word-break:break-word; }
+  .addshot{ padding:10px 12px; border-top:1px dashed var(--line); }
+  .addshot .row{ margin-top:6px; }
+  select[multiple]{ min-height:74px; }
+  .castcols{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  @media (max-width:640px){ .castcols{ grid-template-columns:1fr; } }
+  .castcols .col .section-label{ margin-bottom:6px; }
+  .theme-btn{ background:transparent; border:1px solid var(--line-strong); color:var(--fg); border-radius:var(--radius-pill); width:32px; height:32px; padding:0; cursor:pointer; }
+  .empty-state{ color:var(--fg-faint); font-size:var(--t-sm); }
+  a{ color:var(--accent); }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <span class="brand">다봐요</span><span class="tag">Storyboards</span>
+    <span class="spacer"></span>
+    <span class="ctx" id="asmMsg"></span>
+    <a class="btn--ghost btn btn--sm" href="/sheets">시트</a>
+    <button class="theme-btn" id="themeBtn" title="테마 전환">◐</button>
+  </header>
+
+  <div class="wrap">
+    <aside>
+      <section class="panel">
+        <div class="panel__head"><h2>스토리보드</h2><span class="count" id="sbN"></span></div>
+        <div id="sbList"><span class="empty-state">불러오는 중…</span></div>
+        <div class="row" style="margin-top:12px">
+          <input class="grow" id="sbName" placeholder="새 스토리보드 이름">
+          <button class="btn" onclick="createSB()">생성</button>
+        </div>
+      </section>
+    </aside>
+
+    <main>
+      <section class="panel" id="detail"><span class="empty-state">왼쪽에서 스토리보드를 선택하거나 새로 만드세요.</span></section>
+      <section class="panel" id="castPanel" style="display:none">
+        <div class="panel__head"><h2>캐스트 · 로케이션 · 소품</h2><span class="count faint">breakdown</span></div>
+        <div class="castcols" id="castBody"></div>
+      </section>
+    </main>
+  </div>
+
+<script>
+(function(){ var s=localStorage.getItem("dabwayo-theme"); if(s) document.documentElement.setAttribute("data-theme",s);
+  document.getElementById("themeBtn").onclick=function(){ var c=document.documentElement.getAttribute("data-theme");
+    var n=c==="dark"?"light":(c==="light"?"dark":(matchMedia("(prefers-color-scheme: dark)").matches?"light":"dark"));
+    document.documentElement.setAttribute("data-theme",n); localStorage.setItem("dabwayo-theme",n); }; })();
+
+function j(u,o){ return fetch(u,o).then(function(r){ return r.ok?r.json():Promise.reject(r); }); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+var LIB={character:[],environment:[],prop:[]}, CUR=null;
+
+function loadLib(){ return Promise.all(["character","environment","prop"].map(function(k){
+  return j("/api/references/"+k).then(function(d){ LIB[k]=d.references||[]; }); })); }
+function nameOf(kind,id){ var r=(LIB[kind]||[]).find(function(x){return x.id===id;}); return r?(r.name||id):id; }
+
+function loadList(sel){
+  return j("/api/storyboards").then(function(d){
+    document.getElementById("sbN").textContent=d.count||"";
+    var host=document.getElementById("sbList");
+    if(!d.count){ host.innerHTML='<span class="empty-state">아직 없어요.</span>'; return; }
+    host.innerHTML="";
+    d.storyboards.forEach(function(s){
+      var el=document.createElement("div"); el.className="sb"+(s.id===sel?" sel":""); el.dataset.id=s.id;
+      el.innerHTML='<div class="nm"></div><div class="sub">씬 '+s.scenes+' · 샷 '+s.shots+'</div>';
+      el.querySelector(".nm").textContent=s.name||s.id;
+      el.onclick=function(){ openSB(s.id); }; host.appendChild(el);
+    });
+  });
+}
+function createSB(){ var n=document.getElementById("sbName").value.trim(); if(!n) return;
+  j("/api/storyboards",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})})
+    .then(function(r){ document.getElementById("sbName").value=""; return loadList(r.storyboard.id).then(function(){ openSB(r.storyboard.id); }); }); }
+
+function charOptions(){ return LIB.character.map(function(r){return '<option value="'+r.id+'">'+esc(r.name||r.id)+'</option>';}).join(""); }
+function envOptions(){ return '<option value="">(환경 없음)</option>'+LIB.environment.map(function(r){return '<option value="'+r.id+'">'+esc(r.name||r.id)+'</option>';}).join(""); }
+function propOptions(){ return LIB.prop.map(function(r){return '<option value="'+r.id+'">'+esc(r.name||r.id)+'</option>';}).join(""); }
+
+function openSB(id){
+  CUR=id;
+  document.querySelectorAll(".sb").forEach(function(e){ e.classList.toggle("sel", e.dataset.id===id); });
+  j("/api/storyboards/"+id).then(function(res){
+    var sb=res.storyboard, d=document.getElementById("detail");
+    var scenes=(sb.scenes||[]).map(function(sc){
+      var shots=(sc.shots||[]).map(function(sh){
+        var casts=(sh.cast||[]).map(function(m){return '<span class="chip">🎭 '+esc(nameOf("character",m.character_id))+'</span>';}).join("");
+        var envc=(sh.environment&&sh.environment.id)?'<span class="chip">🏞 '+esc(nameOf("environment",sh.environment.id))+'</span>':"";
+        var propc=(sh.props||[]).map(function(p){return '<span class="chip">prop: '+esc(nameOf("prop",p.prop_id))+'</span>';}).join("");
+        return '<div class="shot" data-shot="'+sh.id+'"><div class="p">'+esc(sh.prompt||"(no prompt)")+'</div>'+
+          '<div class="binds">'+casts+envc+propc+'</div>'+
+          '<div style="margin-top:6px"><a href="#" class="rz">resolve</a></div><div class="resolved"></div></div>';
+      }).join("") || '<span class="empty-state">샷 없음</span>';
+      return '<div class="scene" data-scene="'+sc.id+'"><div class="scene__head"><span class="nm"></span>'+
+        '<span class="faint" style="font-size:var(--t-xs)">'+(sc.shots||[]).length+' shots</span></div>'+
+        '<div class="shots">'+shots+'</div>'+
+        '<div class="addshot"><input class="grow" placeholder="샷 액션" data-f="prompt">'+
+        '<div class="row"><label class="faint" style="font-size:var(--t-xs)">캐스트(다중)</label>'+
+        '<select multiple class="grow" data-f="cast">'+charOptions()+'</select>'+
+        '<label class="faint" style="font-size:var(--t-xs)">환경</label><select data-f="env">'+envOptions()+'</select>'+
+        '<input type="number" min="0.5" step="0.5" value="4" style="width:70px" data-f="dur">'+
+        '<button class="btn--sm btn" data-add="'+sc.id+'">샷 추가</button></div></div></div>';
+    }).join("");
+    d.innerHTML='<div class="panel__head"><h2></h2><span class="count mono">'+sb.id+' · '+sb.width+'×'+sb.height+'</span></div>'+
+      (scenes||'<span class="empty-state">씬이 없어요.</span>')+
+      '<div class="row" style="margin-top:6px"><input class="grow" id="scName" placeholder="새 씬 이름">'+
+      '<button class="btn--ghost btn" onclick="addScene()">씬 추가</button>'+
+      '<span class="spacer" style="flex:1"></span>'+
+      '<button class="btn" onclick="assemble()">프로젝트로 조립 ▶</button></div>';
+    d.querySelector("h2").textContent=sb.name||sb.id;
+    // wire shot-add + resolve
+    d.querySelectorAll("[data-add]").forEach(function(btn){
+      btn.onclick=function(){ var scEl=btn.closest(".scene");
+        var prompt=scEl.querySelector('[data-f=prompt]').value.trim();
+        var dur=parseFloat(scEl.querySelector('[data-f=dur]').value)||4;
+        var cast=[].slice.call(scEl.querySelector('[data-f=cast]').selectedOptions).map(function(o){return {character_id:o.value};});
+        var env=scEl.querySelector('[data-f=env]').value;
+        if(!prompt && !cast.length) return;
+        j("/api/storyboards/"+id+"/shot",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({scene_id:btn.dataset.add, prompt:prompt, duration:dur, cast:cast,
+            environment: env?{id:env}:null})}).then(function(){ openSB(id); loadList(id); }); };
+    });
+    d.querySelectorAll(".shot .rz").forEach(function(a){
+      a.onclick=function(e){ e.preventDefault(); var sh=a.closest(".shot"), rz=sh.querySelector(".resolved"), sid=sh.dataset.shot;
+        if(rz.style.display==="block"){ rz.style.display="none"; return; }
+        j("/api/storyboards/"+id+"/shot/"+sid+"/resolve").then(function(r){ rz.style.display="block";
+          rz.textContent="prompt: "+(r.prompt||"")+"\nrefs: "+JSON.stringify(r.reference_images)+"\nmode: "+r.mode; }); };
+    });
+    loadCast(id);
+  });
+}
+function addScene(){ var n=document.getElementById("scName").value.trim();
+  j("/api/storyboards/"+CUR+"/scene",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})})
+    .then(function(){ openSB(CUR); }); }
+function assemble(){ j("/api/storyboards/"+CUR+"/assemble",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"})
+    .then(function(r){ document.getElementById("asmMsg").textContent="조립됨 → project "+r.project_id+" ("+r.shots+" shots)"; }); }
+function loadCast(id){
+  j("/api/storyboards/"+id+"/cast").then(function(c){
+    document.getElementById("castPanel").style.display="block";
+    function col(title,rows){ return '<div class="col"><div class="section-label">'+title+'</div>'+
+      (rows.length?rows.map(function(x){return '<div class="chip" style="margin:2px 0">'+esc(x.name)+' · '+x.shots+'</div>';}).join(""):'<span class="empty-state">없음</span>')+'</div>'; }
+    document.getElementById("castBody").innerHTML=col("캐릭터",c.characters)+col("환경",c.environments)+col("소품",c.props);
+  });
+}
+
+loadLib().then(function(){ return loadList(); });
+</script>
+</body>
+</html>
