@@ -85,6 +85,7 @@ class AudioClip:
     gain_db: float = 0.0
     fade_in: float = 0.0
     fade_out: float = 0.0
+    duck: Optional[dict] = None    # sidechain-free ducking envelope (see mixer)
 
     @staticmethod
     def from_spec(spec: dict) -> "AudioClip":
@@ -94,6 +95,7 @@ class AudioClip:
             gain_db=float(spec.get("gain_db", 0.0)),
             fade_in=float(spec.get("fade_in", 0.0)),
             fade_out=float(spec.get("fade_out", 0.0)),
+            duck=spec.get("duck"),
         )
 
 

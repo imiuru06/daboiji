@@ -150,7 +150,13 @@ Typical flow:
   5. add_audio(...) optional
   6. render_project(...)
 
-Use get_capabilities() for the full list of element/effect/transition names.
+Intent-level shortcuts (prefer these over hand-writing keyframes):
+  camera_move(pid,"push_in"|"pan_right"|"ken_burns",...)  named camera moves
+  set_focus(pid, subject=clip_id, aperture=0.6[, pull_to=...])  depth of field
+  align_clips(pid,"center"|"distribute_h"|"grid", clip_ids=[...])  layout
+  duck_audio(pid, under=[vo_ids])  dip music under narration
+Use get_capabilities() for element/effect/transition names + camera_moves /
+layout_modes.
 """
 
 

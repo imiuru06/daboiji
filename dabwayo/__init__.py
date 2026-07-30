@@ -38,6 +38,8 @@ def capabilities() -> dict:
     from .elements.base import available_types
     from .transitions.base import available as tr_available
     from .core.easing import REGISTRY as easings
+    from .core.presets import CAMERA_PRESETS as _CAMERA_PRESETS
+    from .core.presets import LAYOUT_MODES as _LAYOUT_MODES
     from .generation.registry import list_providers as _gen_providers
     return {
         "version": __version__,
@@ -47,6 +49,8 @@ def capabilities() -> dict:
         "blend_modes": [m.value for m in BlendMode],
         "easings": sorted(easings),
         "anchors": [a.value for a in Anchor],
+        "camera_moves": list(_CAMERA_PRESETS),
+        "layout_modes": list(_LAYOUT_MODES),
         "generators": _gen_providers(),
     }
 

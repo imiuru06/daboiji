@@ -7,8 +7,10 @@ it. Each tool function is also hoisted into this package's namespace so callers
 ``from dabwayo.mcp_tools import add_text`` exactly as before.
 
 Categories:
-  discovery · projects · clips · editing · generation · watermark ·
-  music · assets · dashboard · inspection · render
+  discovery · projects · clips · editing · camera · layout · audio ·
+  captions · transcribe · voiceover · storyboard · storyboards · reference ·
+  generation · watermark · music · assets · storage · dashboard ·
+  inspection · render · comments · templates
 """
 from __future__ import annotations
 
@@ -17,15 +19,16 @@ from .app import mcp, main
 # Import order matters only where one module imports another (generation ->
 # clips); keeping clips before generation avoids a partial-import surprise.
 from . import (  # noqa: E402
-    discovery, projects, clips, editing, captions, transcribe, voiceover,
-    storyboard, storyboards, reference, generation, watermark, music, assets,
-    storage, dashboard, inspection, render, comments, templates,
+    discovery, projects, clips, editing, camera, layout, audio, captions,
+    transcribe, voiceover, storyboard, storyboards, reference, generation,
+    watermark, music, assets, storage, dashboard, inspection, render, comments,
+    templates,
 )
 
-_MODULES = [discovery, projects, clips, editing, captions, transcribe,
-            voiceover, storyboard, storyboards, reference, generation, watermark,
-            music, assets, storage, dashboard, inspection, render, comments,
-            templates]
+_MODULES = [discovery, projects, clips, editing, camera, layout, audio,
+            captions, transcribe, voiceover, storyboard, storyboards, reference,
+            generation, watermark, music, assets, storage, dashboard,
+            inspection, render, comments, templates]
 
 # Hoist every category module's public tool functions to the package namespace
 # so `dabwayo.mcp_tools.add_text` (and the mcp_server shim) resolve them.
