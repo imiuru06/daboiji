@@ -397,6 +397,37 @@ def _camera(h, m, body):
     return 200, M.set_camera(m.group(1), **body), None
 
 
+# --- intent-level tools (ADR-0003): named moves compiled to keyframes -------
+@route("POST", r"/api/projects/([0-9a-f]+)/camera-move")
+def _camera_move(h, m, body):
+    _snapshot(m.group(1))
+    return 200, M.camera_move(m.group(1), **body), None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/focus")
+def _set_focus(h, m, body):
+    _snapshot(m.group(1))
+    return 200, M.set_focus(m.group(1), **body), None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/animate")
+def _animate(h, m, body):
+    _snapshot(m.group(1))
+    return 200, M.animate_clip(m.group(1), **body), None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/duck")
+def _duck(h, m, body):
+    _snapshot(m.group(1))
+    return 200, M.duck_audio(m.group(1), **body), None
+
+
+@route("POST", r"/api/projects/([0-9a-f]+)/align")
+def _align(h, m, body):
+    _snapshot(m.group(1))
+    return 200, M.align_clips(m.group(1), **body), None
+
+
 @route("PATCH", r"/api/projects/([0-9a-f]+)/clips/([^/]+)/(-?\d+)")
 def _update_clip(h, m, body):
     _snapshot(m.group(1))

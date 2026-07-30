@@ -31,6 +31,7 @@
       <button class="tabbtn on" data-group="tools" data-name="media" onclick="showTab('tools','media')">미디어</button>
       <button class="tabbtn" data-group="tools" data-name="text" onclick="showTab('tools','text')">텍스트</button>
       <button class="tabbtn" data-group="tools" data-name="graphic" onclick="showTab('tools','graphic')">그래픽</button>
+      <button class="tabbtn" data-group="tools" data-name="motion" onclick="showTab('tools','motion')">동작</button>
       <button class="tabbtn" data-group="tools" data-name="fx" onclick="showTab('tools','fx')">효과</button>
     </div>
     <div class="tabbody">
@@ -86,6 +87,58 @@
             <div><label>끝색</label><input id="bg2" value="#0b0e16"></div>
           </div>
           <button class="btn block" style="margin-top:10px" onclick="addBackground()">＋ 배경 추가</button>
+        </div>
+      </div>
+      <!-- 동작: 인텐트 레벨 툴 (ADR-0003) -->
+      <div class="tabpane" data-group="tools" data-name="motion">
+        <div class="sec-title">카메라 무빙</div>
+        <div class="card">
+          <label>프리셋</label>
+          <select id="camPreset"></select>
+          <div class="row" style="margin-top:6px">
+            <div><label>세기 (선택)</label><input id="camAmt" type="number" step="0.01" placeholder="기본값"></div>
+            <div><label>길이(s, 선택)</label><input id="camDur" type="number" step="0.1" placeholder="전체"></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="applyCameraMove()">카메라 무빙 적용</button>
+          <p class="hint">push_in·pan·ken_burns 등을 키프레임으로 컴파일. 여러 번 적용하면 합쳐집니다. hold = 해제.</p>
+        </div>
+
+        <div class="sec-title">클립 모션</div>
+        <div class="card">
+          <label>프리셋</label>
+          <select id="motPreset"></select>
+          <div class="row" style="margin-top:6px">
+            <div><label>세기 (선택)</label><input id="motAmt" type="number" step="0.01" placeholder="기본값"></div>
+            <div><label>바퀴 (spin)</label><input id="motLoops" type="number" step="0.5" placeholder="1"></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="applyAnimate()">선택 클립에 적용</button>
+          <p class="hint">float·pulse·pop·shake·spin 등. <b>타임라인에서 클립을 먼저 선택</b>하세요.</p>
+        </div>
+
+        <div class="sec-title">초점 · 심도 (DOF)</div>
+        <div class="card">
+          <div class="row">
+            <div><label>초점면 depth (0~1)</label><input id="focDepth" type="number" step="0.1" min="0" max="1" value="1"></div>
+            <div><label>조리개 (0~1)</label><input id="focAp" type="number" step="0.1" min="0" max="1" value="0.6"></div>
+          </div>
+          <button class="btn block" style="margin-top:10px" onclick="applyFocus()">심도 적용</button>
+          <p class="hint">초점면과 depth 차이만큼 배경을 흐립니다. 클립마다 depth를 다르게 두면 효과가 큽니다.</p>
+        </div>
+
+        <div class="sec-title">오디오 덕킹</div>
+        <div class="card">
+          <label>감쇠 (dB, 음수)</label>
+          <input id="duckDb" type="number" step="1" value="-12">
+          <button class="btn block" style="margin-top:10px" onclick="applyDuck()">내레이션 밑에서 음악 줄이기</button>
+          <p class="hint">가장 긴 오디오를 음악으로 보고, 나머지(내레이션) 구간에서 자동으로 볼륨을 낮춥니다.</p>
+        </div>
+
+        <div class="sec-title">레이아웃 정렬</div>
+        <div class="card">
+          <label>모드</label>
+          <select id="alignMode"></select>
+          <button class="btn block" style="margin-top:10px" onclick="applyAlign()">클립 정렬</button>
+          <p class="hint">center·distribute_h·grid·stack 등으로 모든 비디오 클립을 한 번에 배치합니다.</p>
         </div>
       </div>
       <!-- 효과 -->

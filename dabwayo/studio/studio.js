@@ -22,6 +22,10 @@ async function api(method,path,body){
 async function boot(){
   CAPS=await api('GET','/api/capabilities');
   $('#fx').innerHTML=(CAPS.effects||[]).map(e=>`<option>${e}</option>`).join('');
+  const fill=(id,arr)=>{const n=$(id);if(n)n.innerHTML=(arr||[]).map(e=>`<option>${e}</option>`).join('');};
+  fill('#camPreset',CAPS.camera_moves);
+  fill('#motPreset',CAPS.motion_presets);
+  fill('#alignMode',CAPS.layout_modes);
   await refreshProjects();
   await loadAssets();
   chatStatus();
@@ -349,6 +353,44 @@ async function addCallout(){
 async function addEffect(){
   await api('POST','/api/projects/'+PID+'/effect',{effect:{type:$('#fx').value}});
   await loadProject();toast('이펙트 추가: '+$('#fx').value);
+}
+
+// ---- intent-level tools (ADR-0003) --------------------------------------
+function needProj(){if(!PID){toast('프로젝트를 먼저 선택하세요');return false;}return true;}
+async function applyCameraMove(){
+  if(!needProj())return;
+  const body={preset:$('#camPreset').value};
+  const amt=parseFloat($('#camAmt').value);if(!isNaN(amt))body.amount=amt;
+  const dur=parseFloat($('#camDur').value);if(!isNaN(dur))body.duration=dur;
+  await api('POST','/api/projects/'+PID+'/camera-move',body);
+  await loadProject();toast('카메라: '+body.preset);
+}
+async function applyAnimate(){
+  if(!needProj())return;
+  if(!SEL){toast('타임라인에서 클립을 먼저 선택하세요');return;}
+  const body={preset:$('#motPreset').value,track:SEL.track,clip_index:SEL.index};
+  const amt=parseFloat($('#motAmt').value);if(!isNaN(amt))body.amount=amt;
+  const lp=parseFloat($('#motLoops').value);if(!isNaN(lp))body.loops=lp;
+  await api('POST','/api/projects/'+PID+'/animate',body);
+  await loadProject();toast('클립 모션: '+body.preset);
+}
+async function applyFocus(){
+  if(!needProj())return;
+  const body={focus_depth:parseFloat($('#focDepth').value),aperture:parseFloat($('#focAp').value)};
+  const r=await api('POST','/api/projects/'+PID+'/focus',body);
+  await loadProject();toast('심도 적용 · 클립 '+(r.clips_affected||0)+'개');
+}
+async function applyDuck(){
+  if(!needProj())return;
+  try{
+    const r=await api('POST','/api/projects/'+PID+'/duck',{amount_db:parseFloat($('#duckDb').value)});
+    await loadProject();toast('덕킹 · 구간 '+((r.windows||[]).length)+'개');
+  }catch(e){toast('덕킹 실패: 음악+내레이션 오디오가 필요합니다');}
+}
+async function applyAlign(){
+  if(!needProj())return;
+  const r=await api('POST','/api/projects/'+PID+'/align',{mode:$('#alignMode').value});
+  await loadProject();toast('정렬: '+$('#alignMode').value+' · 클립 '+(r.clips_affected||0)+'개');
 }
 async function loadAssets(){
   try{
