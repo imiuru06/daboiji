@@ -17,3 +17,10 @@ LAYOUT_MODES = (
     "center", "center_h", "center_v", "top", "bottom", "left", "right",
     "distribute_h", "distribute_v", "grid", "stack_v", "stack_h",
 )
+
+# Per-clip motion presets compiled to transform keyframes by animate_clip.
+# Looping/idle: float, drift, sway, pulse, breathe, spin.
+# One-shot: pop (entrance overshoot), shake (impact).
+MOTION_PRESETS = (
+    "float", "drift", "sway", "pulse", "breathe", "spin", "pop", "shake",
+)

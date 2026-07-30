@@ -152,6 +152,7 @@ Typical flow:
 
 Intent-level shortcuts (prefer these over hand-writing keyframes):
   camera_move(pid,"push_in"|"pan_right"|"ken_burns",...)  named camera moves
+  animate_clip(pid,"float"|"pulse"|"pop"|"shake",clip_id=...)  per-clip motion
   set_focus(pid, subject=clip_id, aperture=0.6[, pull_to=...])  depth of field
   align_clips(pid,"center"|"distribute_h"|"grid", clip_ids=[...])  layout
   duck_audio(pid, under=[vo_ids])  dip music under narration

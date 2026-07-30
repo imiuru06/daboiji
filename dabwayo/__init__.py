@@ -40,6 +40,7 @@ def capabilities() -> dict:
     from .core.easing import REGISTRY as easings
     from .core.presets import CAMERA_PRESETS as _CAMERA_PRESETS
     from .core.presets import LAYOUT_MODES as _LAYOUT_MODES
+    from .core.presets import MOTION_PRESETS as _MOTION_PRESETS
     from .generation.registry import list_providers as _gen_providers
     return {
         "version": __version__,
@@ -50,6 +51,7 @@ def capabilities() -> dict:
         "easings": sorted(easings),
         "anchors": [a.value for a in Anchor],
         "camera_moves": list(_CAMERA_PRESETS),
+        "motion_presets": list(_MOTION_PRESETS),
         "layout_modes": list(_LAYOUT_MODES),
         "generators": _gen_providers(),
     }

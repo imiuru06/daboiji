@@ -1,8 +1,9 @@
 # ADR-0003 — Intent-level tool granularity for agent operation
 
 **Status:** accepted — Phase 1 shipped (camera moves, depth-of-field/rack
-focus, music ducking, multi-clip layout). All deterministic wrappers over
-existing engine primitives; no new engine feature, no ML.
+focus, music ducking, multi-clip layout) + per-clip motion presets. All
+deterministic wrappers over existing engine primitives; no new engine feature,
+no ML.
 
 ## Problem
 A granularity review of the 95-tool surface (asking "is each tool at the right
@@ -35,6 +36,7 @@ creative action, dabwayo compiles it deterministically. New tools (95 → 100):
 | `set_focus(subject, aperture, pull_to)` | per-clip `blur` by `depth` distance (keyframed for rack focus) + `camera.focus` | `mcp_tools/camera.py` |
 | `duck_audio(under=[…])` | ducking envelope on the music clip → ffmpeg `volume` expression in the mixer | `mcp_tools/audio.py` (+ `audio/mixer.py`) |
 | `align_clips(mode, …)` | each clip's `transform.position` (anchor points) | `mcp_tools/layout.py` |
+| `animate_clip(preset, …)` | one clip's `transform` position/scale/rotation keyframes | `mcp_tools/motion.py` |
 
 - **camera_move** presets: push_in/pull_out, pan_{left,right,up,down}, tilt,
   dutch, whip_pan, ken_burns, hold. Moves **compose** (push_in + pan_right =
@@ -48,10 +50,32 @@ creative action, dabwayo compiles it deterministically. New tools (95 → 100):
   attack/release. No sidechain graph, fully deterministic.
 - **align_clips**: center/edges, distribute_h/v, grid, stack — over the canvas
   or a `safe` area or explicit bounds.
+- **animate_clip** (the clip-level twin of `camera_move`): idle/emphasis motion
+  presets — float, drift, sway, pulse, breathe, spin (looping/continuous) and
+  pop, shake (one-shot) — oscillating around the transform the clip already
+  has. Added preemptively as the missing symmetric counterpart to `camera_move`
+  (see "On preemptive scope" below), not on a specific request.
 
 The named vocabularies are published from `capabilities()`
-(`camera_moves`, `layout_modes`) and one source of truth in
+(`camera_moves`, `motion_presets`, `layout_modes`) and one source of truth in
 `core/presets.py`, so agents discover them.
+
+## On preemptive scope (why animate_clip, not the rest)
+Building ahead of a concrete request is warranted only through a filter — a
+candidate must be (1) a pure deterministic compilation over existing
+primitives (no new dependency / asset / ML), (2) closing a gap the agent
+otherwise cannot express without raw keyframes, and (3) cheap with a stable
+design. `animate_clip` passes all three: it is the clip-level mirror of
+`camera_move` (composition had named moves; a single clip did not), pure
+transform-keyframe math. The other Phase-2 candidates each fail it and stay
+deferred until a real need appears:
+- **beat-sync cuts** — needs onset/beat detection (signal analysis); external.
+  Only the deterministic half (snapping to an externally supplied bpm/grid)
+  would qualify later.
+- **SFX stingers / named audio** — needs real sound files; that is an
+  asset/DAM concern, not a tool-granularity gap.
+- **orbit/parallax camera** — orbit in 2.5D is a fake arc; parallax already
+  falls out of `depth` + any pan. Low incremental value.
 
 ## Scope check
 Every one of these is a deterministic compilation of existing state — keyframe
@@ -63,8 +87,10 @@ resolution; ML and bytes stay external.
 
 ## Phasing
 1. **camera_move, set_focus, duck_audio, align_clips + discovery + tests.**
-   ✅ shipped (17 tests; full suite 79 green, incl. a real-ffmpeg ducking
-   assertion and an end-to-end render).
-2. Possible follow-ups (not yet needed): named audio SFX/stingers,
-   beat-sync cut alignment, orbit/parallax presets, per-clip motion presets
-   (float/shake). Deferred until a concrete need appears.
+   ✅ shipped (17 tests; incl. a real-ffmpeg ducking assertion and an
+   end-to-end render).
+2. **animate_clip (per-clip motion presets).** ✅ shipped preemptively as the
+   symmetric counterpart to camera_move (8 tests; full suite 87 green).
+3. Conditionally deferred (fail the preemptive-scope filter above): beat-sync
+   cut alignment, SFX stingers / named audio, orbit/parallax presets. Add when
+   a concrete need appears.
